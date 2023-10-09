@@ -1,0 +1,14 @@
+faster-whisper
+transformers
+ffmpeg-python
+regex
+fuzzysearch
+python-magic
+Jinja2
+git+https://github.com/kant2002/num2words.git@kant/add-cases
+pandas
+torch
+torchaudio
+nltk
+
+
