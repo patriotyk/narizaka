@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "narizaka"
+authors = [
+    {name = "Serhiy Stetskovych", email = "patriotyk+narizaka@gmail.com"},
+]
+description = "Tool to make high quality text to speech (tts) corpus from audio + text books."
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["tts", "text-to-speech", "audio corpus"]
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+
+
+
+
+dynamic = ["version", "dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+version = {attr = "narizaka.VERSION"}
+
+[tool.setuptools]
+packages = ["narizaka"]
+
+[project.scripts]
+narizaka = "narizaka.narizaka:run"

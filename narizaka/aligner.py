@@ -8,12 +8,10 @@ import auditok
 import pathlib
 
 from datetime import timedelta
-from textbook import TextBook
-from audiobook import AudioBook
+from narizaka.textbook import TextBook
+from narizaka.audiobook import AudioBook
 from fuzzysearch import find_near_matches
 from num2words import num2words
-from audiobook import AudioBook
-from textbook import TextBook
 from csv import DictWriter, QUOTE_NONE
 
 from faster_whisper import WhisperModel

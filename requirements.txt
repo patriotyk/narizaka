@@ -1,14 +1,15 @@
 faster-whisper
 transformers
+ffmpeg
 ffmpeg-python
 regex
 fuzzysearch
 python-magic
-Jinja2
-git+https://github.com/kant2002/num2words.git@kant/add-cases
+num2words@git+https://github.com/kant2002/num2words.git#egg=kant/add-cases
 pandas
 torch
-torchaudio
-nltk
+torchaudio==2.0.2
+pydub
+
 
 
