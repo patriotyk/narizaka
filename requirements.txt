@@ -9,6 +9,7 @@ num2words@git+https://github.com/kant2002/num2words.git#egg=kant/add-cases
 pandas
 torch
 torchaudio==2.0.2
+auditok
 pydub
 
 
