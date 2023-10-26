@@ -2,6 +2,8 @@
 requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools_scm]
+
 [project]
 name = "narizaka"
 authors = [
@@ -24,7 +26,13 @@ dependencies = {file = ["requirements.txt"]}
 version = {attr = "narizaka.VERSION"}
 
 [tool.setuptools]
+include-package-data = false
 packages = ["narizaka"]
 
 [project.scripts]
 narizaka = "narizaka.narizaka:run"
+
+[project.urls]
+"Homepage" = "https://github.com/patriotyk/narizaka"
+"Bug Tracker" = "https://github.com/patriotyk/narizaka/issues"
+

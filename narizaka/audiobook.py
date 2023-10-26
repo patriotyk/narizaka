@@ -170,7 +170,7 @@ class AudioBook():
 
             segments = self.split_to_segments(self.current_file, words)
             for segment in segments:
-                self.save_segment(segment, pathlib.Path('output/tmp_audio/'))
+                #self.save_segment(segment, pathlib.Path('output/tmp_audio/'))
                 #print(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}')
                 segment['audio']= self.current_file
                 yield segment

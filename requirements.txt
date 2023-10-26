@@ -5,7 +5,7 @@ ffmpeg-python
 regex
 fuzzysearch
 python-magic
-num2words@git+https://github.com/kant2002/num2words.git#egg=kant/add-cases
+num2words
 pandas
 torch
 torchaudio==2.0.2
