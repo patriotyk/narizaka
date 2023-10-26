@@ -11,6 +11,6 @@ torch
 torchaudio==2.0.2
 auditok
 pydub
-
+stable-ts
 
 

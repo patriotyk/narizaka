@@ -19,7 +19,7 @@ def run():
 
 
     aligner = Aligner(args.t, args.a)
-    aligner.sync(args.o)
+    aligner.run(args.o)
 
 
 if __name__ == '__main__':

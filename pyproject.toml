@@ -17,8 +17,6 @@ classifiers = [
 ]
 
 
-
-
 dynamic = ["version", "dependencies"]
 
 [tool.setuptools.dynamic]
