@@ -156,11 +156,11 @@ class AudioBook():
                                                   append_punctuations = "\"'.。,，!！?？:：”)]}、»")
             words = result.all_words()
 
-            with open('output/tmp/'+self.current_file.name+'.json', 'w') as w:
-                data = []
-                for r in result.all_words():
-                    data.append(asdict(r))
-                w.write(json.dumps(data))
+            # with open('output/tmp/'+self.current_file.name+'.json', 'w') as w:
+            #     data = []
+            #     for r in result.all_words():
+            #         data.append(asdict(r))
+            #     w.write(json.dumps(data))
 
             # data = json.load(open('output/tmp/'+self.current_file.name+'.json', 'r'))
             # words = []
