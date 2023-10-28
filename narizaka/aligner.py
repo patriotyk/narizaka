@@ -130,15 +130,15 @@ class Aligner():
             match = self.find_match(segment["text"])
             #self.audiobook.save_segment(segment, audio_output)
             if match.get('matched'):
-                #print(f'MATCHED: {match["sentence"]}')
+                print(f'MATCHED: {match["sentence"]}')
                 segment['sentence'] = match["sentence"]
                 segment['duration'] = segment['end'] - segment['start']
+                segment['audio'] = self.audiobook.save_segment(segment, audio_output)
                 ds.writerow(segment)
                 self.recognised_duration += segment['duration']
-                self.audiobook.save_segment(segment, audio_output)
             else:
                 pass
-                #print(f'NOT MATCHED: {match["book_text"]}')
+                print(f'NOT MATCHED: {match["book_text"]}')
         dfp.close()
         print(f'Extracted {timedelta(seconds=self.recognised_duration)} of audio duration from {timedelta(seconds=self.audiobook.duration)}')
         print(f'It is {(self.recognised_duration/self.audiobook.duration)*100}% of total audio')

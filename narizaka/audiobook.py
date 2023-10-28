@@ -6,6 +6,7 @@ import pathlib
 import tempfile
 import auditok
 import json
+import hashlib
 from dataclasses import asdict
 # from faster_whisper import WhisperModel
 import torchaudio
@@ -22,6 +23,10 @@ class AudioBook():
         if not filename.exists():
             raise Exception('Audio path doesn\'t exists')
         
+        self.cache_path = pathlib.Path(os.getenv('HOME', '.')) / '.cache/narizaka'
+        if not self.cache_path.exists():
+            os.makedirs(self.cache_path, exist_ok=True)
+
         if filename.is_dir():
             files = os.listdir(filename)
             files.sort()
@@ -92,7 +97,7 @@ class AudioBook():
         text = ''
         for i, word in enumerate(all_words[:-1]):
             text += word.word
-            if word.word[-1] in [',','.','?','-',':','!']:
+            if word.word[-1] in [',','.','?','-',':','!', '»', ';']:
                 pugaps.append([word.end, all_words[i+1].start, i])
                 text = ''
         
@@ -142,6 +147,10 @@ class AudioBook():
         if ready_segment:
             yield ready_segment
                 
+    def calc_current_hash(self):
+        with open(self.current_file, 'rb') as f:
+            data = f.read()
+            return hashlib.sha256(data).hexdigest()
     
     def transcribe(self):
         for file_index, self.current_file in enumerate(self.audio_files):
@@ -150,31 +159,33 @@ class AudioBook():
             waveform_16, _ =  torchaudio.load(self._convert_media_to_wav(self.current_file, sr=sr))
 
 
-            print(f'Transcribing {self.current_file}')
-            result = self.model.transcribe_stable(waveform_16[0].numpy(), input_sr=sr, language='uk', regroup=True,
-                                                  prepend_punctuations= "\"'“¿([{-«",
-                                                  append_punctuations = "\"'.。,，!！?？:：”)]}、»")
-            words = result.all_words()
+            cash_file = self.cache_path / pathlib.Path(self.calc_current_hash()+'.json')
+            if not cash_file.exists():
+                print(f'Transcribing {self.current_file}')
+                result = self.model.transcribe_stable(waveform_16[0].numpy(), input_sr=sr, language='uk', regroup=True,
+                                                      prepend_punctuations= "\"'“¿([{-«",
+                                                      append_punctuations = "\"'.。,，!！?？:：”)]}、»")
+                words = result.all_words()
 
-            # with open('output/tmp/'+self.current_file.name+'.json', 'w') as w:
-            #     data = []
-            #     for r in result.all_words():
-            #         data.append(asdict(r))
-            #     w.write(json.dumps(data))
-
-            # data = json.load(open('output/tmp/'+self.current_file.name+'.json', 'r'))
-            # words = []
-            # for w in data:
-            #     words.append(WordTiming(**w))
+                with open(cash_file, 'w') as w:
+                    data = []
+                    for r in result.all_words():
+                        data.append(asdict(r))
+                    w.write(json.dumps(data))
+            else:
+                print(f'Using transcribed file from cache: {cash_file}')
+                data = json.load(open(cash_file, 'r'))
+                words = []
+                for w in data:
+                    words.append(WordTiming(**w))
 
 
             segments = self.split_to_segments(self.current_file, words)
             for segment in segments:
-                #self.save_segment(segment, pathlib.Path('output/tmp_audio/'))
-                #print(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}')
-                segment['audio']= self.current_file
+                print(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}')
                 yield segment
-        
+
+
     
     
     def save_segment(self, segment, audio_output):
