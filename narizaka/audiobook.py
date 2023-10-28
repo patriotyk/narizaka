@@ -182,8 +182,9 @@ class AudioBook():
 
             segments = self.split_to_segments(self.current_file, words)
             for segment in segments:
-                print(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}')
-                yield segment
+                if (segment["end"] - segment["start"]) <= 20: #FIXME it is temporary fix
+                    print(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}')
+                    yield segment
 
 
     
