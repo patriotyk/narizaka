@@ -123,7 +123,6 @@ class Aligner():
             quoting=QUOTE_MINIMAL,
             delimiter='|'
         )
-        ds.writeheader()
         
 
         for segment in self.audiobook.transcribe():
