@@ -72,7 +72,7 @@ class AudioBook():
             for r in region.split(
                 min_dur=0.2,     # minimum duration of a valid audio event in seconds
                 max_dur=80,       # maximum duration of an event
-                max_silence=0.09, # maximum duration of tolerated continuous silence within an event
+                max_silence=0.11, # maximum duration of tolerated continuous silence within an event
                 energy_threshold=threshold # threshold of detection
             ):
                 if r.duration > 10.0 and deep:
@@ -128,8 +128,9 @@ class AudioBook():
                         temp_reg = None
                         start_word = found[2]+1
                 
-            elif gap_dur > 0.5: #FIXME Should find split here
-                temp_reg = None
+            # elif gap_dur > 3.5: #FIXME Should find split here
+            #     print('GAPPP')
+            #     temp_reg = None
 
 
         ready_segment = {}

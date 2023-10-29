@@ -8,7 +8,7 @@ from narizaka.textbook import TextBook
 from narizaka.audiobook import AudioBook
 from fuzzysearch import find_near_matches
 from num2words import num2words
-from csv import DictWriter, QUOTE_NONE
+from csv import DictWriter, QUOTE_MINIMAL
 
 
 
@@ -120,7 +120,7 @@ class Aligner():
                 "duration"
             ],
             extrasaction='ignore',
-            quoting=QUOTE_NONE,
+            quoting=QUOTE_MINIMAL,
             delimiter='|'
         )
         ds.writeheader()
@@ -128,7 +128,6 @@ class Aligner():
 
         for segment in self.audiobook.transcribe():
             match = self.find_match(segment["text"])
-            #self.audiobook.save_segment(segment, audio_output)
             if match.get('matched'):
                 print(f'MATCHED: {match["sentence"]}')
                 segment['sentence'] = match["sentence"]
@@ -137,8 +136,8 @@ class Aligner():
                 ds.writerow(segment)
                 self.recognised_duration += segment['duration']
             else:
-                pass
                 print(f'NOT MATCHED: {match["book_text"]}')
+                pass
         dfp.close()
         print(f'Extracted {timedelta(seconds=self.recognised_duration)} of audio duration from {timedelta(seconds=self.audiobook.duration)}')
         print(f'It is {(self.recognised_duration/self.audiobook.duration)*100}% of total audio')
