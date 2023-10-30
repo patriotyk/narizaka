@@ -31,7 +31,7 @@ class AudioBook():
             files = list(filename.rglob("*"))
             files.sort()
             for f in files:
-                if self._is_media(f):
+                if not f.is_dir() and self._is_media(f):
                     self.audio_files.append(f)
             if not self.audio_files:
                 raise Exception('Directory doesn\'t contain any audio files')
