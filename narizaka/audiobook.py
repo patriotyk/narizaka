@@ -28,11 +28,11 @@ class AudioBook():
             os.makedirs(self.cache_path, exist_ok=True)
 
         if filename.is_dir():
-            files = os.listdir(filename)
+            files = list(filename.rglob("*"))
             files.sort()
             for f in files:
-                if self._is_media(filename.joinpath(f)):
-                    self.audio_files.append(pathlib.Path(filename.joinpath(f)))
+                if self._is_media(f):
+                    self.audio_files.append(f)
             if not self.audio_files:
                 raise Exception('Directory doesn\'t contain any audio files')
         else:
