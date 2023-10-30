@@ -23,7 +23,6 @@ dynamic = ["version", "dependencies"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
-version = {attr = "narizaka.VERSION"}
 
 [tool.setuptools]
 include-package-data = false
