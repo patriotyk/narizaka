@@ -92,8 +92,6 @@ class AudioBook():
         
         region = auditok.load(str(audio_file))
         audio_regions = sorted(_split(region), key=lambda x: x.meta.start)
-        for r in audio_regions:
-            r.save(f'output/tmp_audio/chunk_{r.meta.start}__{r.meta.end}.wav')
         
         pugaps = []
         text = ''
