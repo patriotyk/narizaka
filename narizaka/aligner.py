@@ -18,13 +18,13 @@ REPLACE={
 }
 
 class Aligner():
-    def __init__(self, book: pathlib.Path, audio: pathlib.Path) -> None:
+    def __init__(self, book: pathlib.Path, audio: pathlib.Path, use_cpu: bool = False) -> None:
         self.normpos = []
         self.denorm = []
         self.norm_text = ''
         self.current_pos = 0
         self.book = TextBook(book)
-        self.audiobook = AudioBook(audio)
+        self.audiobook = AudioBook(audio, use_cpu)
         self.recognised_duration = 0.0
    
     

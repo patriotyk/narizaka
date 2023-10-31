@@ -16,9 +16,9 @@ from stable_whisper.result import WordTiming
 
 
 class AudioBook():
-    def __init__(self, filename: pathlib.Path) -> None:
+    def __init__(self, filename: pathlib.Path, use_cpu: bool=False) -> None:
         #self.model = WhisperModel('large-v2', compute_type='default')
-        self.model = stable_whisper.load_faster_whisper('large-v2')
+        self.model = stable_whisper.load_faster_whisper('large-v2', device='cpu' if use_cpu else 'auto')
         self.audio_files = []      
         if not filename.exists():
             raise Exception('Audio path doesn\'t exists')
@@ -92,12 +92,16 @@ class AudioBook():
         
         region = auditok.load(str(audio_file))
         audio_regions = sorted(_split(region), key=lambda x: x.meta.start)
+        for r in audio_regions:
+            r.save(f'output/tmp_audio/chunk_{r.meta.start}__{r.meta.end}.wav')
         
         pugaps = []
         text = ''
         for i, word in enumerate(all_words[:-1]):
             text += word.word
-            if word.word[-1] in [',','.','?','-',':','!', '»', ';']:
+            if word.word[-1] in [',','.','?','-',':','!', '»', ';'] or \
+              ((all_words[i+1].start - word.end) > 0.2 and (all_words[i+1].end - all_words[i+1].start) > 0.4 and
+              (word.end - word.start) > 0.4):
                 pugaps.append([word.end, all_words[i+1].start, i])
                 text = ''
         
@@ -139,7 +143,7 @@ class AudioBook():
                 ready_segment = segment
                 continue
 
-            if ready_segment['text'].endswith(',') and (segment['end'] - ready_segment['start']) < 12:
+            if ready_segment['text'].endswith(',') and (segment['end'] - ready_segment['start']) < 10:
                 ready_segment['end'] = segment['end']
                 ready_segment['text'] += segment['text']
             else:
@@ -172,7 +176,7 @@ class AudioBook():
                     data = []
                     for r in result.all_words():
                         data.append(asdict(r))
-                    w.write(json.dumps(data))
+                    w.write(json.dumps(data, ensure_ascii=False, indent=4))
             else:
                 print(f'Using transcribed file from cache: {cash_file}')
                 data = json.load(open(cash_file, 'r'))
@@ -183,9 +187,11 @@ class AudioBook():
 
             segments = self.split_to_segments(self.current_file, words)
             for segment in segments:
+                print(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}')
                 if (segment["end"] - segment["start"]) <= 20: #FIXME it is temporary fix
-                    print(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}')
                     yield segment
+                else:
+                    print('Dropping segment because length is more than 20 seconds.')
 
 
     
