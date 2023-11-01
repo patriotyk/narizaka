@@ -12,14 +12,13 @@ def run():
     parser.add_argument('-a',  type=Path, required=True, help='Path to audio version of book, should be folder that\
                                                                contains all audio files or just single audio file')
     parser.add_argument('-o',  type=Path, help='Output directory', default=Path('./output/'))
-    parser.add_argument('-cpu',  type=bool, help='Force to use CPU', default=False)
-    #parser.add_argument('-d',  help='Additionaly generate html report with not recognized items for debugging puposes', action='store_true')
+    parser.add_argument('-device',  type=str, help='Device to run on', default='auto')
 
     args = parser.parse_args()
 
 
 
-    aligner = Aligner(args.t, args.a, args.cpu)
+    aligner = Aligner(args.t, args.a, args.device)
     aligner.run(args.o)
 
 

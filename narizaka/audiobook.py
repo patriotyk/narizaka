@@ -16,9 +16,9 @@ from stable_whisper.result import WordTiming
 
 
 class AudioBook():
-    def __init__(self, filename: pathlib.Path, use_cpu: bool=False) -> None:
+    def __init__(self, filename: pathlib.Path, device: str='auto') -> None:
         #self.model = WhisperModel('large-v2', compute_type='default')
-        self.model = stable_whisper.load_faster_whisper('large-v2', device='cpu' if use_cpu else 'auto')
+        self.model = stable_whisper.load_faster_whisper('large-v2', device=device)
         self.audio_files = []      
         if not filename.exists():
             raise Exception('Audio path doesn\'t exists')
