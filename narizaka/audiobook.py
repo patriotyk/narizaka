@@ -90,7 +90,7 @@ class AudioBook():
             return audio_regions
 
         
-        region = auditok.load(str(audio_file))
+        region = auditok.load(str(audio_file), large_file=True)
         audio_regions = sorted(_split(region), key=lambda x: x.meta.start)
         
         pugaps = []
@@ -159,7 +159,8 @@ class AudioBook():
         for file_index, self.current_file in enumerate(self.audio_files):
             sr = 16000
             self.current_waveform_orig, self.current_sr_orig = torchaudio.load(self._convert_media_to_wav(self.current_file))
-            waveform_16, _ =  torchaudio.load(self._convert_media_to_wav(self.current_file, sr=sr))
+            filename_16 = self._convert_media_to_wav(self.current_file, sr=sr)
+            waveform_16, _ =  torchaudio.load(filename_16)
 
 
             cash_file = self.cache_path / pathlib.Path(self.calc_current_hash()+'.json')
@@ -183,7 +184,7 @@ class AudioBook():
                     words.append(WordTiming(**w))
 
 
-            segments = self.split_to_segments(self.current_file, words)
+            segments = self.split_to_segments(filename_16, words)
             for segment in segments:
                 print(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}')
                 if (segment["end"] - segment["start"]) <= 20: #FIXME it is temporary fix
