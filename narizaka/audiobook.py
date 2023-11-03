@@ -196,8 +196,8 @@ class AudioBook():
     
     
     def save_segment(self, segment, audio_output):
-        filename =  str(audio_output.joinpath(self.current_file.name+f"_{segment['start']:.3f}-{segment['end']:.3f}.flac"))
+        filename = self.current_file.name+f"_{segment['start']:.3f}-{segment['end']:.3f}.flac"
         start = int(segment['start'] * self.current_sr_orig)
         end = int(segment['end'] * self.current_sr_orig)
-        torchaudio.save(filename, self.current_waveform_orig[:, start:end], self.current_sr_orig)
+        torchaudio.save(str(audio_output.joinpath(filename)), self.current_waveform_orig[:, start:end], self.current_sr_orig)
         return filename

@@ -131,7 +131,7 @@ class Aligner():
                 print(f'MATCHED: {match["sentence"]}')
                 segment['sentence'] = match["sentence"]
                 segment['duration'] = segment['end'] - segment['start']
-                segment['audio'] = self.audiobook.save_segment(segment, audio_output)
+                segment['audio'] = self.book.name+'/'+self.audiobook.save_segment(segment, audio_output)
                 ds.writerow(segment)
                 self.recognised_duration += segment['duration']
             else:
