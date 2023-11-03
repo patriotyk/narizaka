@@ -9,7 +9,7 @@ from narizaka.audiobook import AudioBook
 from fuzzysearch import find_near_matches
 from num2words import num2words
 from csv import DictWriter, QUOTE_MINIMAL
-
+import stable_whisper
 
 
 REPLACE={
@@ -18,14 +18,10 @@ REPLACE={
 }
 
 class Aligner():
-    def __init__(self, book: pathlib.Path, audio: pathlib.Path, device: str = 'auto') -> None:
-        self.normpos = []
-        self.denorm = []
-        self.norm_text = ''
-        self.current_pos = 0
-        self.book = TextBook(book)
-        self.audiobook = AudioBook(audio, device)
-        self.recognised_duration = 0.0
+    def __init__(self, output: pathlib.Path, device: str = 'auto') -> None:
+        self.output = output
+        self.model = stable_whisper.load_faster_whisper('large-v2', device=device)
+
    
     
     def _base_norm(self, text):
@@ -102,15 +98,21 @@ class Aligner():
         return match
 
 
-    def run(self, output):
-        self.prev_segment = None
-        self.nsegment_in_file = 0
-        audio_output = output / self.book.name
+    def run(self, book: pathlib.Path, audio: pathlib.Path):
+        self.normpos = []
+        self.denorm = []
+        self.norm_text = ''
+        self.current_pos = 0
+        self.book = TextBook(book)
+        self.audiobook = AudioBook(audio, self.model)
+        self.recognised_duration = 0.0
+
+        audio_output = self.output / self.book.name
         if not audio_output.exists():
             os.makedirs(audio_output, exist_ok=True)
     
             
-        dataset_file = output.joinpath(self.book.name+'.txt')
+        dataset_file = self.output.joinpath(self.book.name+'.txt')
         dfp = dataset_file.open("w")
         ds = DictWriter(
             dfp,

@@ -7,11 +7,29 @@ and transcribes with whisper ASR and alligns this transcription with original te
 
 
 ## Installation
+
+First, you should install several system dependancies:
+
+On deb linux:
+```
+sudo apt install ffmpeg pandoc
+```
+on MacOSX:
+
+```
+brew install ffmpeg pandoc libmagic
+```
+
+Then you can install `narizaka`:
 ```
 pip install narizaka
 ```
+or if you want last develop version:
 
-Or if you plan to modify sources:
+```
+pip install git+https://github.com/patriotyk/narizaka.git
+```
+Also if you plan to modify sources:
 
 ```
 git clone https://github.com/patriotyk/narizaka.git
@@ -21,10 +39,10 @@ Flag `-e` means that you can edit source files in the directory where you have c
 
 ## How to use
 
-Application accepts two inputs. First one, it is audio data, that can be folder of audio files, or just one audio file.
-And text, that can be any document that accepts `pandoc` application.
+Application as input accepts directory that contains audio data, it can be folder or subfolder of audio files, or just one audio file and there also should be one text file tat represents this audio.
+This text file, can be any document that accepts `pandoc` application.
 Example:
 ```
-narizaka -a test_data/farshrutka -t test_data/Farshrutka.fb2
+narizaka -data test_data/farshrutka 
 ```
-This repository contains `test_data` that includes audio and text books that you can use for testing.
+This repository contains `test_data` that includes two audio and text books that you can use for testing.

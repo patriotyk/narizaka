@@ -8,17 +8,15 @@ import auditok
 import json
 import hashlib
 from dataclasses import asdict
-# from faster_whisper import WhisperModel
 import torchaudio
 from faster_whisper.utils import format_timestamp
-import stable_whisper
+
 from stable_whisper.result import WordTiming
 
 
 class AudioBook():
-    def __init__(self, filename: pathlib.Path, device: str='auto') -> None:
-        #self.model = WhisperModel('large-v2', compute_type='default')
-        self.model = stable_whisper.load_faster_whisper('large-v2', device=device)
+    def __init__(self, filename: pathlib.Path, model) -> None:
+        self.model = model
         self.audio_files = []      
         if not filename.exists():
             raise Exception('Audio path doesn\'t exists')
@@ -90,7 +88,7 @@ class AudioBook():
             return audio_regions
 
         
-        region = auditok.load(str(audio_file), large_file=True)
+        region = auditok.load(str(audio_file), large_file=False)
         audio_regions = sorted(_split(region), key=lambda x: x.meta.start)
         
         pugaps = []
