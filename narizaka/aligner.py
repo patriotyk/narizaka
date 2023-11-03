@@ -81,6 +81,9 @@ class Aligner():
             'asr': norm_text,
             'matched': False,
         }
+        if not norm_text:
+            match['book_text'] = self.current_norm_text()[:20 ] + "..."
+            return match
         matches = find_near_matches(norm_text, self.current_norm_text(), max_l_dist=int(num_words*0.4))
         if matches and matches[0].matched:
             matched = min(matches, key=lambda m: m.start)
