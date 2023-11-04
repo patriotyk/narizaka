@@ -8,9 +8,8 @@ python-magic
 num2words
 pandas
 torch
-torchaudio==2.1.0
+torchaudio==2.0.1
 auditok
-pydub
-stable-ts
+stable-ts==2.13.1
 
 
