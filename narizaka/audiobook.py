@@ -40,7 +40,10 @@ class AudioBook():
         self.duration = 0.0
         for fl in self.audio_files:
             probe = ffmpeg.probe(fl)
-            self.duration += float(probe["format"]["duration"])
+            try:
+                self.duration += float(probe["format"]["duration"])
+            except:
+                print(f'Bad file: {fl}')
 
         print(f'Complete audio duration is {format_timestamp(self.duration)}')
 
