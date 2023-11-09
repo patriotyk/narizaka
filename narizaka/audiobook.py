@@ -5,6 +5,7 @@ import ffmpeg
 import pathlib
 import tempfile
 import auditok
+import torch
 import json
 import hashlib
 from dataclasses import asdict
@@ -17,7 +18,8 @@ from stable_whisper.result import WordTiming
 class AudioBook():
     def __init__(self, filename: pathlib.Path, model) -> None:
         self.model = model
-        self.audio_files = []      
+        self.audio_files = []
+        self.samples_buffer_length = 10000 * 44100
         if not filename.exists():
             raise Exception('Audio path doesn\'t exists')
         
@@ -52,10 +54,10 @@ class AudioBook():
         mimetype = magic.from_file(filename=filename, mime=True)
         return mimetype.split('/')[0] == 'audio'
     
-    def _convert_media_to_wav(self, filename, sr=None):
+    def _convert_media(self, filename, format='flac', sr=None):
         probe = ffmpeg.probe(filename)
-        if probe.get('format').get('format_name') != 'wav' or probe['streams'][0]['sample_rate'] != str(sr):
-            fl, audio_file = tempfile.mkstemp(suffix='.wav')
+        if probe.get('format').get('format_name') != format or probe['streams'][0]['sample_rate'] != str(sr):
+            fl, audio_file = tempfile.mkstemp(suffix=f'.{format}')
             os.close(fl)
             stream = ffmpeg.input(filename)
             if sr:
@@ -63,9 +65,9 @@ class AudioBook():
             else:
                 stream = ffmpeg.output(stream, audio_file, loglevel='panic')
             ffmpeg.run(stream, overwrite_output=True)
-            return audio_file
+            return audio_file, sr or int(probe['streams'][0]['sample_rate'])
         else:
-            return filename
+            return filename, int(probe['streams'][0]['sample_rate'])
 
     def split_to_segments(self, audio_file, all_words):
         def _split(region, threshold=46, deep=4):
@@ -158,9 +160,11 @@ class AudioBook():
     
     def transcribe(self):
         for file_index, self.current_file in enumerate(self.audio_files):
+            self.last_sample = 0
             sr = 16000
-            self.current_waveform_orig, self.current_sr_orig = torchaudio.load(self._convert_media_to_wav(self.current_file))
-            filename_16 = self._convert_media_to_wav(self.current_file, sr=sr)
+            self.current_waveform_orig = None
+            self.orig_flac, self.current_sr_orig  = self._convert_media(self.current_file)
+            filename_16, _ = self._convert_media(self.current_file, format='wav', sr=sr)
             waveform_16, _ =  torchaudio.load(filename_16)
 
 
@@ -198,7 +202,14 @@ class AudioBook():
     
     def save_segment(self, segment, audio_output):
         filename = self.current_file.name+f"_{segment['start']:.3f}-{segment['end']:.3f}.flac"
-        start = int(segment['start'] * self.current_sr_orig)
         end = int(segment['end'] * self.current_sr_orig)
+        if end > self.last_sample:
+            chunk, _ = torchaudio.load(self.orig_flac, frame_offset=self.last_sample, num_frames=self.samples_buffer_length)
+            if self.current_waveform_orig != None:
+                self.current_waveform_orig = torch.cat((self.current_waveform_orig, chunk), -1)
+            else:
+                self.current_waveform_orig = chunk
+            self.last_sample =  self.last_sample+ self.samples_buffer_length
+        start = int(segment['start'] * self.current_sr_orig)
         torchaudio.save(str(audio_output.joinpath(filename)), self.current_waveform_orig[:, start:end], self.current_sr_orig)
         return filename
