@@ -19,7 +19,7 @@ class AudioBook():
     def __init__(self, filename: pathlib.Path, model) -> None:
         self.model = model
         self.audio_files = []
-        self.samples_buffer_length = 10000 * 44100
+        self.samples_buffer_length = 8000 * 44100
         if not filename.exists():
             raise Exception('Audio path doesn\'t exists')
         
@@ -61,9 +61,9 @@ class AudioBook():
             os.close(fl)
             stream = ffmpeg.input(filename)
             if sr:
-                stream = ffmpeg.output(stream, audio_file, ar=sr, loglevel='panic')
+                stream = ffmpeg.output(stream, audio_file, ar=sr, loglevel='error')
             else:
-                stream = ffmpeg.output(stream, audio_file, loglevel='panic')
+                stream = ffmpeg.output(stream, audio_file, loglevel='error')
             ffmpeg.run(stream, overwrite_output=True)
             return audio_file, sr or int(probe['streams'][0]['sample_rate'])
         else:
@@ -71,6 +71,8 @@ class AudioBook():
 
     def split_to_segments(self, audio_file, all_words):
         def _split(region, threshold=46, deep=4):
+            if not region.meta:
+                region.meta = {'start': 0}
             audio_regions = []
             for r in region.split(
                 min_dur=0.2,     # minimum duration of a valid audio event in seconds
@@ -78,22 +80,17 @@ class AudioBook():
                 max_silence=0.11, # maximum duration of tolerated continuous silence within an event
                 energy_threshold=threshold # threshold of detection
             ):
+                r.meta = {'start': r.meta.start+region.meta.start, 'end': r.meta.end+region.meta.start}
                 if r.duration > 10.0 and deep:
                     regions = _split(r, threshold+2, deep-1)
                     if len(regions)> 1:
-                        offset = r.meta.start
-                        for rr in regions:
-                            rr.meta = {'end': rr.meta.end+offset, 'start': rr.meta.start+offset}
-                    splitted = []
-                    for rr in regions:
-                        splitted.append(str(rr.meta))                    
-                    audio_regions = audio_regions + regions
+                        audio_regions = audio_regions + regions
                 else:
                     audio_regions.append(r)
             return audio_regions
 
         
-        region = auditok.load(str(audio_file), large_file=False)
+        region = auditok.load(str(audio_file), large_file=True)
         audio_regions = sorted(_split(region), key=lambda x: x.meta.start)
         
         pugaps = []
