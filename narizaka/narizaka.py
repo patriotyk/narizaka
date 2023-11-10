@@ -56,9 +56,10 @@ def run():
     for book_dir in args.data.iterdir():
         if book_dir.is_dir():
             for book_item in book_dir.iterdir():
-                mimetype = magic.from_file(filename=book_item, mime=True)
-                if mimetype in supported_mimes:
-                    found_books.append((book_dir, book_item))
+                if not book_item.is_dir():
+                    mimetype = magic.from_file(filename=book_item, mime=True)
+                    if mimetype in supported_mimes:
+                        found_books.append((book_dir, book_item))
     if found_books:
         print(f"Following books have been found:")
         for book in found_books:
