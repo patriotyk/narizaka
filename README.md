@@ -43,6 +43,12 @@ Application as input accepts directory that contains audio data, it can be folde
 This text file, can be any document that accepts `pandoc` application.
 Example:
 ```
-narizaka -data test_data/farshrutka 
+narizaka test_data/farshrutka 
 ```
+Or
+```
+narizaka test_data
+```
+to process all books.
+
 This repository contains `test_data` that includes two audio and text books that you can use for testing.

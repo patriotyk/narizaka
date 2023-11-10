@@ -12,11 +12,12 @@ def run():
     parser = argparse.ArgumentParser(description = 'Utility to make audio dataset from  audio and text book')
 
     
-    parser.add_argument('-o',  type=Path, help='Output directory', default=Path('./output/'))
-    parser.add_argument('-device',  type=str, help='Device to run on', default='auto')
-    parser.add_argument('-data',  required=True, type=Path, help='This is path to data directory where each subdirectory\n'
+    parser.add_argument('data', type=Path, help='This is path to data directory where each subdirectory\n'
                         'contains only one text file(book format or just text) and audio file/files for this text. '
                         'Audio files could have free folder structure.')
+    parser.add_argument('-t',  required=False, type=Path, help='Path to text file(book format or just text)', default=None)
+    parser.add_argument('-o',  type=Path, help='Output directory', default=Path('./output/'))
+    parser.add_argument('-device',  type=str, help='Device to run on', default='auto')
 
 
     args = parser.parse_args()
@@ -31,13 +32,41 @@ def run():
         'text/plain',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ]
-    for item in args.data.iterdir():
-        if not item.is_dir():
-            mimetype = magic.from_file(filename=item, mime=True)
-            if mimetype in supported_mimes:
-                aligner = Aligner(args.o, args.device)
-                aligner.run(item, args.data)
-                break
+    found_book = None
+    aligner = Aligner(args.o, args.device)
+    if args.t:
+        mimetype = magic.from_file(filename=args.t, mime=True)
+        if mimetype in supported_mimes:
+            found_book = args.t
+        else:
+            print('Text file is not suported.\n suported formats are:', supported_mimes)
+            sys.exit(-1)
+    else:
+        for item in args.data.iterdir():
+            if not item.is_dir():
+                mimetype = magic.from_file(filename=item, mime=True)
+                if mimetype in supported_mimes:
+                    found_book = item
+                    break
+    if found_book:
+        aligner.run(item, args.data)
+    else:
+        print('Root directory doesn\'t contain any text files, checking subdirectories...' )
+    found_books = []
+    for book_dir in args.data.iterdir():
+        if book_dir.is_dir():
+            for book_item in book_dir.iterdir():
+                mimetype = magic.from_file(filename=book_item, mime=True)
+                if mimetype in supported_mimes:
+                    found_books.append((book_dir, book_item))
+    if found_books:
+        print(f"Following books have been found:")
+        for book in found_books:
+            print(book[1])
+        for book in found_books:
+            aligner.run(book[1], book[0])
+    else:
+        print('Have not found any data to process.')
 
 
 
