@@ -74,11 +74,11 @@ def run():
         for book in found_books:
             result = aligner.run(book[1], book[0])
             print(f'Result for book {book[1]}:')
-            print(result)
+            print_result(result)
             total_result[0] += result[0]
             total_result[1] += result[1]
         print('Total statistic:')
-        print(total_result)
+        print_result(total_result)
     else:
         print('Have not found any data to process.')
 
