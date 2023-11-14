@@ -2,11 +2,15 @@
 import argparse
 import sys
 import magic
-
+from datetime import timedelta
 from pathlib import Path
 from narizaka.aligner import Aligner
 
 
+def print_result(result):
+    recognized, total = result
+    print(f'Extracted {timedelta(seconds=recognized)} from audio duration of {timedelta(seconds=total)}')
+    print(f'It is {(recognized/total)*100:.3f}% of total audio')
 
 def run():
     parser = argparse.ArgumentParser(description = 'Utility to make audio dataset from  audio and text book')
@@ -49,9 +53,11 @@ def run():
                     found_book = item
                     break
     if found_book:
-        aligner.run(item, args.data)
-    else:
-        print('Root directory doesn\'t contain any text files, checking subdirectories...' )
+        result = aligner.run(item, args.data)
+        print_result(result)
+        sys.exit(0)
+
+    print('Root directory doesn\'t contain any text files, checking subdirectories...' )
     found_books = []
     for book_dir in args.data.iterdir():
         if book_dir.is_dir():
@@ -62,10 +68,17 @@ def run():
                         found_books.append((book_dir, book_item))
     if found_books:
         print(f"Following books have been found:")
+        total_result = [0,0]
         for book in found_books:
             print(book[1])
         for book in found_books:
-            aligner.run(book[1], book[0])
+            result = aligner.run(book[1], book[0])
+            print(f'Result for book {book[1]}:')
+            print(result)
+            total_result[0] += result[0]
+            total_result[1] += result[1]
+        print('Total statistic:')
+        print(total_result)
     else:
         print('Have not found any data to process.')
 
