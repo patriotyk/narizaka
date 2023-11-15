@@ -8,6 +8,7 @@ import auditok
 import torch
 import json
 import hashlib
+from retry import retry
 from dataclasses import asdict
 import torchaudio
 from faster_whisper.utils import format_timestamp
@@ -54,6 +55,7 @@ class AudioBook():
         m = magic.detect_from_filename(filename=filename)
         return  True if m.mime_type.split('/')[0] == 'audio' else True if 'audio' in m.name.lower() else False
 
+    @retry(tries=3, delay=1)
     def _convert_media(self, filename, format='flac', sr=None):
         probe = ffmpeg.probe(filename)
         if probe.get('format').get('format_name') != format or probe['streams'][0]['sample_rate'] != str(sr):

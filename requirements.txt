@@ -11,5 +11,6 @@ torch
 torchaudio==2.0.1
 auditok
 stable-ts==2.13.1
+retry2
 
 
