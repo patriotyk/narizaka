@@ -9,8 +9,8 @@ from narizaka.aligner import Aligner
 
 def print_result(result):
     recognized, total = result
-    print(f'Extracted {timedelta(seconds=recognized)} from audio duration of {timedelta(seconds=total)}')
-    print(f'It is {(recognized/total)*100:.3f}% of total audio')
+    print(f'Extracted {recognized/3600:.3f} hours from audio duration of {total/3600:.3f}')
+    print(f'It is {(recognized/total)*100:.1f}% of total audio')
 
 def run():
     parser = argparse.ArgumentParser(description = 'Utility to make audio dataset from  audio and text book')
