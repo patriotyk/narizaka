@@ -51,9 +51,9 @@ class AudioBook():
 
     
     def _is_media(self, filename: pathlib.Path)-> bool:
-        mimetype = magic.from_file(filename=filename, mime=True)
-        return mimetype.split('/')[0] == 'audio'
-    
+        m = magic.detect_from_filename(filename=filename)
+        return  True if m.mime_type.split('/')[0] == 'audio' else True if 'audio' in m.name.lower() else False
+
     def _convert_media(self, filename, format='flac', sr=None):
         probe = ffmpeg.probe(filename)
         if probe.get('format').get('format_name') != format or probe['streams'][0]['sample_rate'] != str(sr):
