@@ -57,7 +57,7 @@ def run():
         print_result(result)
         sys.exit(0)
 
-    print('Root directory doesn\'t contain any text files, checking subdirectories...' )
+    print('Root directory doesn\'t contain any text files, checking subdirectories...\n' )
     found_books = []
     for book_dir in args.data.iterdir():
         if book_dir.is_dir():
@@ -67,7 +67,7 @@ def run():
                     if mimetype in supported_mimes:
                         found_books.append((book_dir, book_item))
     if found_books:
-        print(f"Following books have been found:")
+        print(f"The following books have been found:")
         total_result = [0,0]
         for book in found_books:
             print(book[1])

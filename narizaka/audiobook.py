@@ -48,8 +48,6 @@ class AudioBook():
             except:
                 print(f'Bad file: {fl}')
 
-        print(f'Complete audio duration is {format_timestamp(self.duration)}')
-
     
     def _is_media(self, filename: pathlib.Path)-> bool:
         m = magic.detect_from_filename(filename=filename)

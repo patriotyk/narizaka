@@ -10,6 +10,7 @@ from fuzzysearch import find_near_matches
 from num2words import num2words
 from csv import DictWriter, QUOTE_MINIMAL
 import stable_whisper
+from faster_whisper.utils import format_timestamp
 
 
 REPLACE={
@@ -108,6 +109,8 @@ class Aligner():
         self.current_pos = 0
         self.book = TextBook(book)
         self.audiobook = AudioBook(audio, self.model)
+        print(f'\nStarting book {self.book.name}, with audio duration {format_timestamp(self.audiobook.duration)}')
+
         self.recognised_duration = 0.0
 
         audio_output = self.output / self.book.name
