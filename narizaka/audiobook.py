@@ -20,7 +20,6 @@ class AudioBook():
     def __init__(self, filename: pathlib.Path, model) -> None:
         self.model = model
         self.audio_files = []
-        self.samples_buffer_length = 8000 * 44100
         if not filename.exists():
             raise Exception('Audio path doesn\'t exists')
         
@@ -145,68 +144,56 @@ class AudioBook():
                 ready_segment['end'] = segment['end']
                 ready_segment['text'] += segment['text']
             else:
-                yield ready_segment
+                if (ready_segment["end"] - ready_segment["start"]) <= 20:
+                    yield ready_segment
                 ready_segment = segment
-        if ready_segment:
+        if ready_segment and (ready_segment["end"] - ready_segment["start"]) <= 20:
             yield ready_segment
                 
-    def calc_current_hash(self):
-        with open(self.current_file, 'rb') as f:
+    def calc_current_hash(self, current_file):
+        with open(current_file, 'rb') as f:
             data = f.read()
             return hashlib.sha256(data).hexdigest()
     
     def transcribe(self):
-        for file_index, self.current_file in enumerate(self.audio_files):
-            self.last_sample = 0
+        transcribed = []
+        for current_file in self.audio_files:
             sr = 16000
-            self.current_waveform_orig = None
-            self.orig_flac, self.current_sr_orig  = self._convert_media(self.current_file)
-            filename_16, _ = self._convert_media(self.current_file, format='wav', sr=sr)
-            waveform_16, _ =  torchaudio.load(filename_16)
+            filename_16, _ = self._convert_media(current_file, format='wav', sr=sr)
 
-
-            cash_file = self.cache_path / pathlib.Path(self.calc_current_hash()+'.json')
+            cash_file = self.cache_path / pathlib.Path(self.calc_current_hash(current_file)+'.json')
+            transcribed.append((current_file, filename_16, cash_file))
             if not cash_file.exists():
-                print(f'Transcribing {self.current_file}')
-                result = self.model.transcribe_stable(waveform_16[0].numpy(), input_sr=sr, language='uk', regroup=True,
+                print(f'Transcribing {current_file}')
+                result = self.model.transcribe_stable(filename_16, input_sr=sr, language='uk', regroup=True,
                                                       prepend_punctuations= "\"'“¿([{-«",
                                                       append_punctuations = "\"'.。,，!！?？:：”)]}、»")
-                words = result.all_words()
 
                 with open(cash_file, 'w') as w:
                     data = []
                     for r in result.all_words():
                         data.append(asdict(r))
                     w.write(json.dumps(data, ensure_ascii=False, indent=4))
-            else:
-                print(f'Using transcribed file from cache: {cash_file}')
-                data = json.load(open(cash_file, 'r'))
-                words = []
-                for w in data:
-                    words.append(WordTiming(**w))
+
+        return transcribed
 
 
-            segments = self.split_to_segments(filename_16, words)
-            for segment in segments:
-                print(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}')
-                if (segment["end"] - segment["start"]) <= 20: #FIXME it is temporary fix
-                    yield segment
-                else:
-                    print('Dropping segment because length is more than 20 seconds.')
+    def segments(self, transcribed):
+        for orig_file, audio_file_16, transcribed_file in transcribed:
+            print(f'Using transcribed file from file: {transcribed_file}')
+            self.orig_flac, self.current_sr_orig  = self._convert_media(orig_file)
+            data = json.load(open(transcribed_file, 'r'))
+            words = []
+            for w in data:
+                words.append(WordTiming(**w))
 
+            segments = self.split_to_segments(audio_file_16, words)
+            yield {
+                'segments': segments,
+                'orig_name': orig_file.name,
+                'flac_path': self.orig_flac,
+                'flac_sr': self.current_sr_orig
 
+            }
     
     
-    def save_segment(self, segment, audio_output):
-        filename = self.current_file.name+f"_{segment['start']:.3f}-{segment['end']:.3f}.flac"
-        end = int(segment['end'] * self.current_sr_orig)
-        if end > self.last_sample:
-            chunk, _ = torchaudio.load(self.orig_flac, frame_offset=self.last_sample, num_frames=self.samples_buffer_length)
-            if self.current_waveform_orig != None:
-                self.current_waveform_orig = torch.cat((self.current_waveform_orig, chunk), -1)
-            else:
-                self.current_waveform_orig = chunk
-            self.last_sample =  self.last_sample+ self.samples_buffer_length
-        start = int(segment['start'] * self.current_sr_orig)
-        torchaudio.save(str(audio_output.joinpath(filename)), self.current_waveform_orig[:, start:end], self.current_sr_orig)
-        return filename

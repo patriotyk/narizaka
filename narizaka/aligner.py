@@ -11,6 +11,8 @@ from num2words import num2words
 from csv import DictWriter, QUOTE_MINIMAL
 import stable_whisper
 from faster_whisper.utils import format_timestamp
+import torch
+import torchaudio
 
 
 REPLACE={
@@ -132,26 +134,44 @@ class Aligner():
             delimiter='|'
         )
         
+        samples_buffer_length = 8000 * 44100
+        transcribed =  self.audiobook.transcribe()
+        for segments in self.audiobook.segments(transcribed):
+            last_sample = 0
+            current_waveform_orig = None
+            orig_flac = segments['flac_path']
+            current_sr_orig  = segments['flac_sr']
+            orig_name = segments['orig_name']
 
-        for segment in self.audiobook.transcribe():
-            match = self.find_match(segment["text"])
-            if match.get('matched'):
-                print(f'MATCHED: {match["sentence"]}')
-                segment['sentence'] = match["sentence"]
-                segment['duration'] = segment['end'] - segment['start']
-                segment['audio'] = self.book.name+'/'+self.audiobook.save_segment(segment, audio_output)
-                ds.writerow(segment)
-                self.recognised_duration += segment['duration']
-            else:
-                print(f'NOT MATCHED: {match["book_text"]}')
+            for segment in segments['segments']:
+                print(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}')
+
+                match = self.find_match(segment["text"])
+                if match.get('matched'):
+                    print(f'MATCHED: {match["sentence"]}')
+
+                    filename = orig_name+f"_{segment['start']:.3f}-{segment['end']:.3f}.flac"
+                    end = int(segment['end'] * current_sr_orig)
+                    if end > last_sample:
+                        chunk, _ = torchaudio.load(orig_flac, frame_offset=last_sample, num_frames=samples_buffer_length)
+                        if current_waveform_orig != None:
+                            current_waveform_orig = torch.cat((current_waveform_orig, chunk), -1)
+                        else:
+                            current_waveform_orig = chunk
+                        last_sample =  last_sample+ samples_buffer_length
+                    start = int(segment['start'] * current_sr_orig)
+                    torchaudio.save(str(audio_output.joinpath(filename)), current_waveform_orig[:, start:end], current_sr_orig)
+
+                    segment['sentence'] = match["sentence"]
+                    segment['duration'] = segment['end'] - segment['start']
+                    segment['audio'] = self.book.name+ '/' + filename
+                    ds.writerow(segment)
+                    self.recognised_duration += segment['duration']
+
+                else:
+                    print(f'NOT MATCHED: {match["book_text"]}')
                 pass
         dfp.close()
         return self.recognised_duration, self.audiobook.duration
 
-
-
-                
-                
-
-    
     
