@@ -2,6 +2,7 @@
 import argparse
 import sys
 import magic
+import zipfile
 from pathlib import Path
 from narizaka.aligner import Aligner
 from narizaka.audiobook import AudioBook
@@ -58,6 +59,8 @@ def run():
     parser.add_argument('-t',  required=False, type=Path, help='Path to text file(book format or just text)', default=None)
     parser.add_argument('-o',  type=Path, help='Output directory', default=Path('./output/'))
     parser.add_argument('-device',  type=str, help='Device to run on', default='auto')
+    parser.add_argument('-c', action='store_true',  help='Cache only mode', default=False)
+
 
 
     args = parser.parse_args()
@@ -75,18 +78,30 @@ def run():
             print(book[1])
 
         model = stable_whisper.load_faster_whisper('large-v2', device=args.device)    
+        transcribed_books = []
         for book in found_books:
             try:
                 audio_book = AudioBook(book[0], model)
-                result = aligner.run(book[1], audio_book.transcribe())
-                print(f'Result for book {book[1]}:')
-                print_result(result, audio_book.duration)
-                total_result[0] += result
-                total_result[1] += audio_book.duration
+                transcribed = audio_book.transcribe()
+                transcribed_books += transcribed
+                if not args.c:
+                    result = aligner.run(book[1],transcribed)
+                    print(f'Result for book {book[1]}:')
+                    print_result(result, audio_book.duration)
+                    total_result[0] += result
+                    total_result[1] += audio_book.duration
             except Exception as ex:
                 print(f'Exception with book {book[1]}:\n {str(ex)}')
-        if len(found_books) > 1:
-            print('Total statistic:')
+
+        if args.c:
+            archive_path = args.o/(args.data.name +'.zip')
+            with zipfile.ZipFile(archive_path , mode="w") as archive:
+                for t in transcribed_books:
+                    archive.write(t[2], arcname='narizaka/' + t[2].name)
+            print(f'\nCache archive have been saved to {archive_path}')
+
+        if len(found_books) > 1 and not args.c:
+            print('\nTotal statistic:')
             print_result(total_result[0], total_result[1])
     else:
         print('Have not found any data to process.')
