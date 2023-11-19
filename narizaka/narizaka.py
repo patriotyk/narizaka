@@ -1,6 +1,7 @@
 
 import argparse
 import sys
+import os
 import magic
 import zipfile
 from pathlib import Path
@@ -94,6 +95,8 @@ def run():
                 print(f'Exception with book {book[1]}:\n {str(ex)}')
 
         if args.c:
+            if not args.c.exists():
+                os.makedirs(args.c, exist_ok=True)
             archive_path = args.o/(args.data.name +'.zip')
             with zipfile.ZipFile(archive_path , mode="w") as archive:
                 for t in transcribed_books:
