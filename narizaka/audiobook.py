@@ -10,8 +10,6 @@ import json
 import hashlib
 from retry import retry
 from dataclasses import asdict
-import torchaudio
-from faster_whisper.utils import format_timestamp
 
 from stable_whisper.result import WordTiming
 
