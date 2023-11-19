@@ -84,7 +84,7 @@ def run():
         for book in found_books:
             try:
                 audio_book = AudioBook(book[0], model)
-                print(f'\n Transcribing {book[0]},\nduration of book is: {format_timestamp(audio_book.duratin)}')
+                print(f'\n Transcribing {book[0]},\nduration of book is: {format_timestamp(audio_book.duration)}')
                 transcribed = audio_book.transcribe()
                 transcribed_books += transcribed
                 if not args.c:
