@@ -2,15 +2,51 @@
 import argparse
 import sys
 import magic
-from datetime import timedelta
 from pathlib import Path
 from narizaka.aligner import Aligner
+from narizaka.audiobook import AudioBook
+import stable_whisper
 
 
-def print_result(result):
-    recognized, total = result
+def print_result(recognized, total):
     print(f'Extracted {recognized/3600:.3f} hours from audio duration of {total/3600:.3f}')
     print(f'It is {(recognized/total)*100:.1f}% of total audio')
+
+def find_books(args):
+    supported_mimes =[
+        'application/epub+zip',
+        'text/xml',
+        'text/plain',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ]
+    found_book = None
+    if args.t:
+        mimetype = magic.from_file(filename=args.t, mime=True)
+        if mimetype in supported_mimes:
+            found_book = args.t
+        else:
+            print('Text file is not suported.\n suported formats are:', supported_mimes)
+            sys.exit(-1)
+    else:
+        for item in args.data.iterdir():
+            if not item.is_dir():
+                mimetype = magic.from_file(filename=item, mime=True)
+                if mimetype in supported_mimes:
+                    found_book = item
+                    break
+    if found_book:
+        return [(args.data, item)]
+    
+    print('Root directory doesn\'t contain any text files, checking subdirectories...\n' )
+    found_books = []
+    for book_dir in args.data.iterdir():
+        if book_dir.is_dir():
+            for book_item in book_dir.iterdir():
+                if not book_item.is_dir():
+                    mimetype = magic.from_file(filename=book_item, mime=True)
+                    if mimetype in supported_mimes:
+                        found_books.append((book_dir, book_item))
+    return found_books
 
 def run():
     parser = argparse.ArgumentParser(description = 'Utility to make audio dataset from  audio and text book')
@@ -29,59 +65,29 @@ def run():
         print("-data argument should point to directory")
         sys.exit(-1)
 
-    
-    supported_mimes =[
-        'application/epub+zip',
-        'text/xml',
-        'text/plain',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    ]
-    found_book = None
-    aligner = Aligner(args.o, args.device)
-    if args.t:
-        mimetype = magic.from_file(filename=args.t, mime=True)
-        if mimetype in supported_mimes:
-            found_book = args.t
-        else:
-            print('Text file is not suported.\n suported formats are:', supported_mimes)
-            sys.exit(-1)
-    else:
-        for item in args.data.iterdir():
-            if not item.is_dir():
-                mimetype = magic.from_file(filename=item, mime=True)
-                if mimetype in supported_mimes:
-                    found_book = item
-                    break
-    if found_book:
-        result = aligner.run(item, args.data)
-        print_result(result)
-        sys.exit(0)
-
-    print('Root directory doesn\'t contain any text files, checking subdirectories...\n' )
-    found_books = []
-    for book_dir in args.data.iterdir():
-        if book_dir.is_dir():
-            for book_item in book_dir.iterdir():
-                if not book_item.is_dir():
-                    mimetype = magic.from_file(filename=book_item, mime=True)
-                    if mimetype in supported_mimes:
-                        found_books.append((book_dir, book_item))
+        
+    found_books = find_books(args)
     if found_books:
+        aligner = Aligner(args.o)
         print(f"The following books have been found:")
         total_result = [0,0]
         for book in found_books:
             print(book[1])
+
+        model = stable_whisper.load_faster_whisper('large-v2', device=args.device)    
         for book in found_books:
             try:
-                result = aligner.run(book[1], book[0])
+                audio_book = AudioBook(book[0], model)
+                result = aligner.run(book[1], audio_book.transcribe())
                 print(f'Result for book {book[1]}:')
-                print_result(result)
-                total_result[0] += result[0]
-                total_result[1] += result[1]
+                print_result(result, audio_book.duration)
+                total_result[0] += result
+                total_result[1] += audio_book.duration
             except Exception as ex:
-                print(f'Exception with book {book[1]}:\n {str(book[1])}')
-        print('Total statistic:')
-        print_result(total_result)
+                print(f'Exception with book {book[1]}:\n {str(ex)}')
+        if len(found_books) > 1:
+            print('Total statistic:')
+            print_result(total_result[0], total_result[1])
     else:
         print('Have not found any data to process.')
 
