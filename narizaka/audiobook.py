@@ -1,15 +1,12 @@
 import magic
-from datetime import timedelta
 import os
 import ffmpeg
 import pathlib
-import tempfile
 import auditok
-import torch
 import json
 import hashlib
-from retry import retry
 from dataclasses import asdict
+from narizaka import utils
 
 from stable_whisper.result import WordTiming
 
@@ -50,21 +47,6 @@ class AudioBook():
         m = magic.detect_from_filename(filename=filename)
         return  True if m.mime_type.split('/')[0] == 'audio' else True if 'audio' in m.name.lower() else False
 
-    @retry(tries=3, delay=1)
-    def _convert_media(self, filename, format='flac', sr=None):
-        probe = ffmpeg.probe(filename)
-        if probe.get('format').get('format_name') != format or probe['streams'][0]['sample_rate'] != str(sr):
-            fl, audio_file = tempfile.mkstemp(suffix=f'.{format}')
-            os.close(fl)
-            stream = ffmpeg.input(filename)
-            if sr:
-                stream = ffmpeg.output(stream, audio_file, acodec='pcm_s16le' if format == 'wav' else 'flac' , ar=sr, loglevel='error')
-            else:
-                stream = ffmpeg.output(stream, audio_file,  acodec='pcm_s16le' if format == 'wav' else 'flac' , loglevel='error')
-            ffmpeg.run(stream, overwrite_output=True)
-            return audio_file, sr or int(probe['streams'][0]['sample_rate'])
-        else:
-            return filename, int(probe['streams'][0]['sample_rate'])
 
     def split_to_segments(self, audio_file, all_words):
         def _split(region, threshold=46, deep=4):
@@ -157,7 +139,7 @@ class AudioBook():
         transcribed = []
         for current_file in self.audio_files:
             sr = 16000
-            filename_16, _ = self._convert_media(current_file, format='wav', sr=sr)
+            filename_16, _ = utils.convert_media(current_file, format='wav', sr=sr)
 
             cash_file = self.cache_path / pathlib.Path(self.calc_current_hash(current_file)+'.json')
             transcribed.append((current_file, filename_16, cash_file))
@@ -179,7 +161,7 @@ class AudioBook():
     def segments(self, transcribed):
         for orig_file, audio_file_16, transcribed_file in transcribed:
             print(f'Using transcribed file from file: {transcribed_file}')
-            self.orig_flac, self.current_sr_orig  = self._convert_media(orig_file)
+            self.orig_flac, self.current_sr_orig  = utils.convert_media(orig_file)
             data = json.load(open(transcribed_file, 'r'))
             words = []
             for w in data:
