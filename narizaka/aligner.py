@@ -120,11 +120,15 @@ class Aligner():
         text = text.lower()
         text = regex.sub(rf"[{''.join(REPLACE.keys())}]", lambda x: REPLACE[x.group()], text)
         text = regex.sub(r"(\d+)\s+рік", lambda x: num2words(x.group(1), lang='uk', to='ordinal'), text)
-        text = regex.sub(r"\d+", lambda x: num2words(x.group(), lang='uk'), text)
+        #text = regex.sub(r"\d+", lambda x: num2words(x.group(), lang='uk'), text)
         return text.split(' ')
     
     def _norm_word(self, text):
         text = regex.sub(r'[^\p{L}\p{N}]', '', text)
+        return text
+    
+    def _norm_for_corpus(self, text):
+        text = regex.sub(r'[^\p{L}\p{N}\?\!\,\.\-\: ]', '', text)
         return text
     
     def normalize(self, text):
@@ -177,7 +181,7 @@ class Aligner():
         if matches and matches[0].matched:
             matched = min(matches, key=lambda m: m.start)
             
-            match['sentence'] = self.get_denorm(matched.start, matched.matched)
+            match['sentence'] = self._norm_for_corpus(self.get_denorm(matched.start, matched.matched))
             match['sentence_norm'] = matched.matched
             match['start'] = matched.start
             match['end'] = matched.end
