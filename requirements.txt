@@ -10,7 +10,7 @@ pandas
 torch
 torchaudio==2.0.1
 auditok
-stable-ts==2.13.1
+stable-ts@git+https://github.com/jianfch/stable-ts.git
 retry2
 
 

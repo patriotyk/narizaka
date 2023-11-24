@@ -124,10 +124,9 @@ class AudioBook():
                 ready_segment['end'] = segment['end']
                 ready_segment['text'] += segment['text']
             else:
-                if (ready_segment["end"] - ready_segment["start"]) <= 20:
-                    yield ready_segment
+                yield ready_segment
                 ready_segment = segment
-        if ready_segment and (ready_segment["end"] - ready_segment["start"]) <= 20:
+        if ready_segment:
             yield ready_segment
                 
     def calc_current_hash(self, current_file):
