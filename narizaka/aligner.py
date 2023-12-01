@@ -21,6 +21,7 @@ REPLACE={
     '§': 'параграф ',
     '№': 'номер ',
 }
+bad_text = regex.compile('[\p{L}--[а-яіїєґ]]', regex.VERSION1|regex.IGNORECASE)
 
 class Aligner():
     def __init__(self, output: pathlib.Path) -> None:
@@ -110,6 +111,15 @@ class Aligner():
         yield ready_segment
 
     
+    def pases_filter(self, segment):
+        if segment['end']-segment['start'] < 1.0 or segment['end']-segment['start'] > 35:
+            print('Skipped because of length')
+            return False
+        if bad_text.search(segment['text']):
+            print('Skipped because contains inapropirate characters')
+            return False
+        return True
+
     
     def _base_norm(self, text):
         text = regex.sub(r'[\t\n]', ' ', text)
@@ -252,6 +262,8 @@ class Aligner():
                 match = self.find_match(segment["text"])
                 if match.get('matched'):
                     print(f'MATCHED: {match["sentence"]}')
+                    if not self.pases_filter(segment):
+                        continue
 
                     filename = orig_name+f"_{segment['start']:.3f}-{segment['end']:.3f}.flac"
                     end = int(segment['end'] * current_sr_orig)
