@@ -62,6 +62,7 @@ def run():
     parser.add_argument('-o',  type=Path, help='Output directory', default=Path('./output/'))
     parser.add_argument('-device',  type=str, help='Device to run on', default='auto')
     parser.add_argument('-c', action='store_true',  help='Cache only mode', default=False)
+    parser.add_argument('-sr',  type=int, help='Resample to', default=0)
 
 
 
@@ -73,7 +74,7 @@ def run():
         
     found_books = find_books(args)
     if found_books:
-        aligner = Aligner(args.o)
+        aligner = Aligner(args.o, args.sr)
         print(f"The following books have been found:")
         total_result = [0,0]
         for book in found_books:

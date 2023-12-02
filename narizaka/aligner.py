@@ -13,6 +13,7 @@ from csv import DictWriter, QUOTE_MINIMAL
 from faster_whisper.utils import format_timestamp
 import torch
 import torchaudio
+from torchaudio.functional import resample
 import auditok
 from stable_whisper.result import WordTiming
 
@@ -24,8 +25,9 @@ REPLACE={
 bad_text = regex.compile('[\p{L}--[а-яіїєґ]]', regex.VERSION1|regex.IGNORECASE)
 
 class Aligner():
-    def __init__(self, output: pathlib.Path) -> None:
+    def __init__(self, output: pathlib.Path, sr: int) -> None:
         self.output = output
+        self.sr = sr
 
 
    
@@ -216,7 +218,6 @@ class Aligner():
                 'orig_name': orig_file.name,
                 'flac_path': self.orig_flac,
                 'flac_sr': self.current_sr_orig
-
             }
 
     def run(self, book: pathlib.Path, transcribed):
@@ -253,7 +254,7 @@ class Aligner():
             last_sample = 0
             current_waveform_orig = None
             orig_flac = segments['flac_path']
-            current_sr_orig  = segments['flac_sr']
+            current_sr  = segments['flac_sr'] if not self.sr else self.sr
             orig_name = segments['orig_name']
 
             for segment in segments['segments']:
@@ -266,16 +267,18 @@ class Aligner():
                         continue
 
                     filename = orig_name+f"_{segment['start']:.3f}-{segment['end']:.3f}.flac"
-                    end = int(segment['end'] * current_sr_orig)
+                    end = int(segment['end'] * current_sr)
                     if end > last_sample:
-                        chunk, _ = torchaudio.load(orig_flac, frame_offset=last_sample, num_frames=samples_buffer_length)
+                        chunk, orig_sr = torchaudio.load(orig_flac, frame_offset=last_sample, num_frames=samples_buffer_length)
+                        if self.sr:
+                            chunk = resample(chunk, orig_sr, self.sr, lowpass_filter_width=128, resampling_method="sinc_interp_kaiser")
                         if current_waveform_orig != None:
                             current_waveform_orig = torch.cat((current_waveform_orig, chunk), -1)
                         else:
                             current_waveform_orig = chunk
-                        last_sample =  last_sample+ samples_buffer_length
-                    start = int(segment['start'] * current_sr_orig)
-                    torchaudio.save(str(audio_output.joinpath(filename)), current_waveform_orig[:, start:end], current_sr_orig)
+                        last_sample =  last_sample + samples_buffer_length
+                    start = int(segment['start'] * current_sr)
+                    torchaudio.save(str(audio_output.joinpath(filename)), current_waveform_orig[:, start:end], current_sr)
 
                     segment['sentence'] = match["sentence"]
                     segment['duration'] = segment['end'] - segment['start']
