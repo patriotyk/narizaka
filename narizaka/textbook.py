@@ -29,6 +29,7 @@ class TextBook:
     def remove_beginning_dashes(self, text):
         text = regex.sub(r'[᠆‐‑‒–—―⁻₋−⸺⸻]', '-', text)
         text = regex.sub(r'^\s*?\-', '', text)
+        text = regex.sub(r'\[.*?\]', '', text)
         return text
     
     def more_text(self):
