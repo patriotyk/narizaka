@@ -18,7 +18,6 @@ import numpy as np
 from torchaudio.functional import resample
 
 from stable_whisper.result import WordTiming
-import pyloudnorm as pyln
 
 
 REPLACE={
@@ -176,7 +175,6 @@ class Aligner():
             orig_flac = segments['flac_path']
             current_sr  = segments['flac_sr'] if not self.sr else self.sr
             orig_name = segments['orig_name']
-            meter = pyln.Meter(current_sr)
 
             for segment in segments['segments']:
                 print(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}')
@@ -201,11 +199,7 @@ class Aligner():
                     start = int(segment['start'] * current_sr)
                     
                     segment_wave = current_waveform_orig[:, start:end]
-                    l_wave = np.transpose(segment_wave.numpy())
-                    loudness = meter.integrated_loudness(l_wave)
-
-                    segment_normalized_audio = pyln.normalize.loudness(l_wave, loudness, -18.0)
-                    torchaudio.save(str(audio_output.joinpath(filename)), torch.from_numpy(np.transpose(segment_normalized_audio)), current_sr)
+                    torchaudio.save(str(audio_output.joinpath(filename)), segment_wave, current_sr)
 
                     segment['sentence'] = match["sentence"]
                     segment['duration'] = segment['end'] - segment['start']
