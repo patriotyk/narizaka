@@ -63,6 +63,7 @@ def run():
     parser.add_argument('-device',  type=str, help='Device to run on', default='auto')
     parser.add_argument('-c', action='store_true',  help='Cache only mode', default=False)
     parser.add_argument('-sr',  type=int, help='Resample to', default=0)
+    parser.add_argument('-columns',  type=str, help='Columns to include, default values is "audio,ipa,sentence,duration", this is all possible columns', default='location,ipa,text,length')
 
 
 
@@ -74,7 +75,7 @@ def run():
         
     found_books = find_books(args)
     if found_books:
-        aligner = Aligner(args.o, args.sr)
+        aligner = Aligner(args.o, args.sr, args.columns)
         print(f"The following books have been found:")
         total_result = [0,0]
         for book in found_books:

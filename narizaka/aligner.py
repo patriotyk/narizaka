@@ -19,6 +19,10 @@ from torchaudio.functional import resample
 
 from stable_whisper.result import WordTiming
 
+from ukrainian_word_stress import Stressifier
+from ipa_uk import ipa
+stressify = Stressifier()
+
 
 REPLACE={
     '§': 'параграф ',
@@ -27,10 +31,11 @@ REPLACE={
 bad_text = regex.compile('[\p{L}--[а-яіїєґ]]', regex.VERSION1|regex.IGNORECASE)
 
 class Aligner():
-    def __init__(self, output: pathlib.Path, sr: int) -> None:
+    def __init__(self, output: pathlib.Path, sr: int, columns: str) -> None:
         self.output = output
         self.sr = sr
         self.splitter = Splitter()
+        self.columns = columns.split(',')
 
     def pases_filter(self, segment):
         if segment['end']-segment['start'] < 1.0 or segment['end']-segment['start'] > 35:
@@ -158,11 +163,7 @@ class Aligner():
         dfp = dataset_file.open("w")
         ds = DictWriter(
             dfp,
-            fieldnames=[
-                "audio",
-                "sentence",
-                "duration"
-            ],
+            fieldnames=self.columns,
             extrasaction='ignore',
             quoting=QUOTE_MINIMAL,
             delimiter='|'
@@ -204,6 +205,8 @@ class Aligner():
                     segment['sentence'] = match["sentence"]
                     segment['duration'] = segment['end'] - segment['start']
                     segment['audio'] = self.book.name+ '/' + filename
+                    segment['ipa'] = ipa(stressify(match["sentence"]), False)
+
                     ds.writerow(segment)
                     self.recognised_duration += segment['duration']
 
