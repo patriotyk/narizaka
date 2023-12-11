@@ -8,6 +8,7 @@ import json
 from narizaka.textbook import TextBook
 from narizaka.splitter import Splitter
 from narizaka import utils
+from narizaka.textnormalizer import norm
 from fuzzysearch import find_near_matches
 from num2words import num2words
 from csv import DictWriter, QUOTE_MINIMAL
@@ -24,10 +25,6 @@ from ipa_uk import ipa
 stressify = Stressifier()
 
 
-REPLACE={
-    '§': 'параграф ',
-    '№': 'номер ',
-}
 bad_text = regex.compile('[\p{L}--[а-яіїєґ]]', regex.VERSION1|regex.IGNORECASE)
 
 class Aligner():
@@ -48,14 +45,7 @@ class Aligner():
 
     
     def _base_norm(self, text):
-        text = regex.sub(r'[\t\n]', ' ', text)
-        text = regex.sub(r'\s+', ' ', text)
-        text = unicodedata.normalize('NFC', text)
-        text = text.lower()
-        text = regex.sub(rf"[{''.join(REPLACE.keys())}]", lambda x: REPLACE[x.group()], text)
-        text = regex.sub(r"(\d+)\s+рік", lambda x: num2words(x.group(1), lang='uk', to='ordinal'), text)
-        #text = regex.sub(r"\d+", lambda x: num2words(x.group(), lang='uk'), text)
-        return text.split(' ')
+        return norm(text).split(' ')
     
     def _norm_word(self, text):
         text = regex.sub(r'[^\p{L}\p{N}]', '', text)

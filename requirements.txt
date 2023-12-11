@@ -14,4 +14,5 @@ stable-ts@git+https://github.com/jianfch/stable-ts.git
 retry2
 ukrainian_word_stress
 ipa_uk@git+https://github.com/lang-uk/ipa-uk.git
+num2words@git+https://github.com/patriotyk/num2words.git
 
