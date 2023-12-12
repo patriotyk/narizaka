@@ -2,6 +2,10 @@ import regex
 from num2words import num2words
 import unicodedata
 
+simple_replacements = {
+    '№' : 'номер',
+    '§': 'номер'
+}
 
 masc_replacments_dict = {
     '%':['відсоток', 'відсотки', 'відсотків'],
@@ -41,9 +45,6 @@ neu_replacments_dict = {
 }
 
 all_replacments_keys = list(masc_replacments_dict.keys()) + list(fem_replacments_dict.keys()) + list(neu_replacments_dict.keys())
-replacments_keys_r = '|'.join([f'({i})' for i in all_replacments_keys])
-
-
 
 #Ordinal types
 #Називний
@@ -51,49 +52,33 @@ ordinal_nominative_masculine_cases = ('й','ий')
 ordinal_nominative_feminine_cases = ('a','ша', 'я')
 ordinal_nominative_neuter_cases = ('е',)
 
-ordinal_nominative_masculine_cases_r = '|'.join([f'({i})' for i in ordinal_nominative_masculine_cases])
-ordinal_nominative_feminine_cases_r = '|'.join([f'({i})' for i in ordinal_nominative_feminine_cases])
-ordinal_nominative_neuter_cases_r = '|'.join([f'({i})' for i in ordinal_nominative_neuter_cases])
-
 #Родовий
-ordinal_genitive_masculine_case = ('го','о', 'року', 'р')
+ordinal_genitive_masculine_case = ('го','о',)
 ordinal_genitive_feminine_case = ('ї', 'ої')
-
-ordinal_genitive_masculine_case_r = '|'.join([f'({i})' for i in ordinal_genitive_masculine_case])
-ordinal_genitive_feminine_case_r = '|'.join([f'({i})' for i in ordinal_genitive_feminine_case])
 
 
 #Давальний
 ordinal_dative_masculine_case = ('му',)
 ordinal_dative_feminine_case = ('й','ій')
 
-ordinal_dative_masculine_case_r = '|'.join([f'({i})' for i in ordinal_dative_masculine_case])
-ordinal_dative_feminine_case_r = '|'.join([f'({i})' for i in ordinal_dative_feminine_case])
-
 #Знахідний
 ordinal_accusative_masculine_case = ordinal_genitive_masculine_case
 ordinal_accusative_feminine_case = ('у',)
-ordinal_accusative_feminine_case_r = '|'.join([f'({i})' for i in ordinal_accusative_feminine_case])
 
 #Орудний
 ordinal_instrumental_masculine_case = ('им', 'ім')
 ordinal_instrumental_feminine_case = ('ю')
 
-ordinal_instrumental_masculine_case_r = '|'.join([f'({i})' for i in ordinal_instrumental_masculine_case])
-ordinal_instrumental_feminine_case_r = '|'.join([f'({i})' for i in ordinal_instrumental_feminine_case])
 
 #Місцевий
 # ordinal_locative_masculine_case = ordinal_dative_masculine_case
 # ordinal_locative_feminine_case = ordinal_dative_feminine_case
 
-numcases_r = regex.compile(rf'(\d+)\s*(\-)?\s*({replacments_keys_r}|'+\
-                           rf'{ordinal_nominative_masculine_cases_r}|{ordinal_nominative_feminine_cases_r}|{ordinal_nominative_neuter_cases_r}|'+\
-                           rf'{ordinal_genitive_masculine_case_r}|{ordinal_genitive_feminine_case_r}|'+\
-                           rf'{ordinal_dative_masculine_case_r}|{ordinal_dative_feminine_case_r}|{ordinal_accusative_feminine_case_r}|'+\
-                           rf'{ordinal_instrumental_masculine_case_r}|{ordinal_instrumental_feminine_case_r}|(-.*?))\.?(\s|$)', regex.IGNORECASE, regex.UNICODE)
+numcases_r = regex.compile(rf'((?:^|\s)(\d+)\s*(\-?)(([^\d]*?)|(\-\.+))\.?)(\s+.|$)', regex.IGNORECASE, regex.UNICODE)
 
 print(numcases_r)
-cardinal_genitive_endings = ('a', 'e', 'є', 'й')
+cardinal_genitive_endings = ('а', 'e', 'є', 'й')
+ordinal_genitive_cases = ('року',)
 
 def number_form(number):
     if number[-1] == "1":
@@ -103,7 +88,8 @@ def number_form(number):
     else:
         return 2
 
-def replace_cases(number, dash, case):
+def replace_cases(number, dash, case='', next_word=''):
+    print(number)
     gender = 'masculine'
     m_case = 'nominative'
     to = 'ordinal'
@@ -121,20 +107,18 @@ def replace_cases(number, dash, case):
                 gender = 'neuter'
             to = 'cardinal'
         else:
-            laschar = case[-1]
-            if len(case) < 3 and laschar in cardinal_genitive_endings:
+            if len(case) < 3 and case and case[-1] in cardinal_genitive_endings:
                 m_case = 'genitive'
                 gender='masculine'
                 to = 'cardinal'
-            else:
+            elif case in ordinal_genitive_cases:
+                to = 'ordinal'
                 m_case = 'genitive'
-                if case[0] == '-':
-                    to = 'cardinal'
-                    repl = case[1:]
-                else:
-                    to = 'ordinal'
-                    repl = case
-                #print(f'UNKNOWN CASEdd {number} {case}')
+                repl = case
+            else:
+                to = 'cardinal'
+                repl = case
+                
     else:    
         if case in ordinal_nominative_masculine_cases:
             m_case = 'nominative'
@@ -167,27 +151,36 @@ def replace_cases(number, dash, case):
             m_case = 'instrumental'
             gender = 'feminine'
         else:
-            print(f'UNKNOWN CASE {number}-{case}')
+            if case and case[-1] in cardinal_genitive_endings:
+                m_case = 'genitive'
+                gender='masculine'
+                to = 'cardinal'
+                repl = case
+            else:
+                print(f'UNKNOWN CASE {number}-{case}')
 
     return_str = num2words(number, to=to, lang='uk', case=m_case, gender=gender)
     if repl:
         return_str +=  ' ' + repl
+    if not next_word or (next_word and  next_word.strip().isupper()):
+        return_str += '.'
     return return_str
 
 def norm(text):
     text = regex.sub(r'[\t\n]', ' ', text)
+    text = regex.sub(rf"[{''.join(simple_replacements.keys())}]", lambda x: f' {simple_replacements[x.group()]} ', text)
+    text = regex.sub(r"(\d)\s+(\d)", r"\1\2", text)
     text = regex.sub(r'\s+', ' ', text)
     text = unicodedata.normalize('NFC', text)
-    text = text.lower()
     matches = numcases_r.finditer(text)
     pos = 0
     new_text = ''
     for m in matches:
-        repl = replace_cases(m.group(1), m.group(2), m.group(3))
-        new_text += text[pos:m.start(0)] + repl + ' '
-        pos = m.end(0)
+        repl = replace_cases(m.group(2), m.group(3), m.group(4), m.group(7))
+        new_text += text[pos:m.start(0)]+ ' ' + repl
+        pos = m.end(1)
     new_text += text[pos:]
-    return new_text
+    return new_text.strip()
 
     
 
