@@ -49,7 +49,7 @@ class Aligner():
     
     def _norm_word(self, text):
         text = regex.sub(r'[^\p{L}\p{N}]', '', text)
-        return text
+        return text.lower()
     
     def _norm_for_corpus(self, text):
         text = regex.sub(r'[^\p{L}\p{N}\?\!\,\.\-\: ]', '', text)
