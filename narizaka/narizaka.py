@@ -63,7 +63,7 @@ def run():
     parser.add_argument('-device',  type=str, help='Device to run on', default='auto')
     parser.add_argument('-c', action='store_true',  help='Cache only mode', default=False)
     parser.add_argument('-sr',  type=int, help='Resample to', default=0)
-    parser.add_argument('-columns',  type=str, help='Columns to include, default values is "audio,ipa,sentence,duration", this is all possible columns', default='location,ipa,text,length')
+    parser.add_argument('-columns',  type=str, help='Columns to include, default values is "audio,ipa,sentence,duration", this is all possible columns', default='audio,ipa,sentence,duration')
 
 
 

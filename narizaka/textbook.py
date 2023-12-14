@@ -32,11 +32,29 @@ class TextBook:
         text = regex.sub(r'\[.*?\]', '', text)
         return text
     
+    def _get_text(self, el):
+        tag = el.tag
+        if not isinstance(tag, str) and tag is not None:
+            return
+        text = ''
+        if el.text:
+            text += el.text
+        
+        for e in el:
+            if e.tag.endswith('}a'):
+                continue
+            for s in self._get_text(e):
+                text += s
+            if e.tail:
+               text += e.tail
+        return text
+
+    
     def more_text(self):
         text = ''
         for i in self.iter:
             if i.tag.endswith('}p'):
-                text += self.remove_beginning_dashes(' '.join(i.itertext())) + ' '
+                text += self.remove_beginning_dashes(self._get_text(i)) + ' '
                 if len(text) >= self.min_text_length:
                     break
         return text 
