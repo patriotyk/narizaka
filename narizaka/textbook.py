@@ -26,10 +26,11 @@ class TextBook:
         mimetype = magic.from_file(filename=filename, mime=True)
         return mimetype == 'text/xml'
     
-    def remove_beginning_dashes(self, text):
+    def norm(self, text):
         text = regex.sub(r'[᠆‐‑‒–—―⁻₋−⸺⸻]', '-', text)
         text = regex.sub(r'^\s*?\-', '', text)
         text = regex.sub(r'\[.*?\]', '', text)
+        text = regex.sub(r'\s+\.', '. ', text)
         return text
     
     def _get_text(self, el):
@@ -41,10 +42,9 @@ class TextBook:
             text += el.text
         
         for e in el:
-            if e.tag.endswith('}a'):
-                continue
-            for s in self._get_text(e):
-                text += s
+            if not e.tag.endswith('}a'):
+                for s in self._get_text(e):
+                    text += s
             if e.tail:
                text += e.tail
         return text
@@ -54,7 +54,7 @@ class TextBook:
         text = ''
         for i in self.iter:
             if i.tag.endswith('}p'):
-                text += self.remove_beginning_dashes(self._get_text(i)) + ' '
+                text += self.norm(self._get_text(i)) + ' '
                 if len(text) >= self.min_text_length:
                     break
         return text 
