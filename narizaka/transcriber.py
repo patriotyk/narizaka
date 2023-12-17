@@ -4,7 +4,7 @@ import json
 import hashlib
 from dataclasses import asdict
 from narizaka.utils import convert_media
-from narizaka.transcribers.faster_whisper import FasterWhisperTranscriber
+from narizaka.asr_backends.faster_whisper import FasterWhisperTranscriber
 
 class Transcriber():
     def __init__(self, device) -> None:
