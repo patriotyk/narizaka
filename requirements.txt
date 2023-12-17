@@ -8,7 +8,7 @@ python-magic
 num2words
 pandas
 torch
-torchaudio==2.0.1
+torchaudio
 auditok
 stable-ts@git+https://github.com/jianfch/stable-ts.git
 retry2

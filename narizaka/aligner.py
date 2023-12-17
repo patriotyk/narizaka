@@ -10,16 +10,12 @@ from narizaka.splitter import Splitter
 from narizaka import utils
 from narizaka.textnormalizer import norm
 from fuzzysearch import find_near_matches
-from num2words import num2words
 from csv import DictWriter, QUOTE_MINIMAL
 from faster_whisper.utils import format_timestamp
 import torch
 import torchaudio
-import numpy as np
 from torchaudio.functional import resample
-
 from stable_whisper.result import WordTiming
-
 from ukrainian_word_stress import Stressifier
 from ipa_uk import ipa
 stressify = Stressifier()
@@ -206,5 +202,3 @@ class Aligner():
                 pass
         dfp.close()
         return self.recognised_duration
-
-    

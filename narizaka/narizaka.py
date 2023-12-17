@@ -7,7 +7,7 @@ import zipfile
 from pathlib import Path
 from narizaka.aligner import Aligner
 from narizaka.audiobook import AudioBook
-import stable_whisper
+from narizaka.transcriber import Transcriber
 from faster_whisper.utils import format_timestamp
 
 
@@ -81,13 +81,13 @@ def run():
         for book in found_books:
             print(book[1])
 
-        model = stable_whisper.load_faster_whisper('large-v2', device=args.device)    
+        transcriber = Transcriber(device=args.device)
         transcribed_books = []
         for book in found_books:
-            try:
-                audio_book = AudioBook(book[0], model)
+            #try:
+                audio_book = AudioBook(book[0])
                 print(f'\n Transcribing {book[0]},\nduration of book is: {format_timestamp(audio_book.duration)}')
-                transcribed = audio_book.transcribe()
+                transcribed = transcriber.transcribe(audio_book)
                 transcribed_books += transcribed
                 if not args.c:
                     result = aligner.run(book[1],transcribed)
@@ -95,8 +95,8 @@ def run():
                     print_result(result, audio_book.duration)
                     total_result[0] += result
                     total_result[1] += audio_book.duration
-            except Exception as ex:
-                print(f'Exception with book {book[1]}:\n {str(ex)}')
+            # except Exception as ex:
+            #     print(f'Exception with book {book[1]}:\n {str(ex)}')
 
         if args.c:
             if not args.o.exists():
