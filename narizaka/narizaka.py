@@ -82,19 +82,22 @@ def run():
             print(book[1])
 
         transcriber = Transcriber(device=args.device)
-        transcribed_books = []
         for book in found_books:
+            transcriber.add(book[1],  AudioBook(book[0]))
+
+        cache_files = []
+        for transcribed in transcriber.transcribe():
+                
             #try:
-                audio_book = AudioBook(book[0])
-                print(f'\n Transcribing {book[0]},\nduration of book is: {format_timestamp(audio_book.duration)}')
-                transcribed = transcriber.transcribe(audio_book)
-                transcribed_books += transcribed
-                if not args.c:
-                    result = aligner.run(book[1],transcribed)
-                    print(f'Result for book {book[1]}:')
-                    print_result(result, audio_book.duration)
-                    total_result[0] += result
-                    total_result[1] += audio_book.duration
+                if args.c:
+                    for _, transcribed in transcribed[1].items():
+                        cache_files.append(transcribed['cache'])
+                else:
+                    result = aligner.run(*transcribed)
+                    # print(f'Result for book {book[1]}:')
+                    # print_result(result, audio_book.duration)
+                    # total_result[0] += result
+                    # total_result[1] += audio_book.duration
             # except Exception as ex:
             #     print(f'Exception with book {book[1]}:\n {str(ex)}')
 
@@ -103,8 +106,8 @@ def run():
                 os.makedirs(args.o, exist_ok=True)
             archive_path = args.o/(args.data.name +'.zip')
             with zipfile.ZipFile(archive_path , mode="w") as archive:
-                for t in transcribed_books:
-                    archive.write(t[2], arcname='narizaka/' + t[2].name)
+                for t in cache_files:
+                    archive.write(t, arcname='narizaka/' + t.name)
             print(f'\nCache archive have been saved to {archive_path}')
 
         if len(found_books) > 1 and not args.c:

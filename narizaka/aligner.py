@@ -115,15 +115,20 @@ class Aligner():
         return match
 
     def segments(self, transcribed):
-        for orig_file, audio_file_16, transcribed_file in transcribed:
-            print(f'Using transcribed file from file: {transcribed_file}')
+        for orig_file, transcribed_files in transcribed.items():
+            print(f"Using transcribed file from file: {transcribed_files['cache']}")
             self.orig_flac, self.current_sr_orig  = utils.convert_media(orig_file)
-            data = json.load(open(transcribed_file, 'r'))
+            data = json.load(open(transcribed_files['cache'], 'r'))
             words = []
             for w in data:
                 words.append(WordTiming(**w))
 
-            segments = self.splitter.split_to_segments(audio_file_16, words)
+            if transcribed_files['audio_16']:
+                file_16 = transcribed_files['audio_16']
+            else:
+                file_16, _ = utils.convert_media(orig_file, format='wav', sr=16000)
+            print(file_16)
+            segments = self.splitter.split_to_segments(file_16, words)
             yield {
                 'segments': segments,
                 'orig_name': orig_file.name,
