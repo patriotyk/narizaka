@@ -90,14 +90,14 @@ def run():
                 
             #try:
                 if args.c:
-                    for _, transcribed in transcribed[1].items():
+                    for _, transcribed in transcribed[1]['files'].items():
                         cache_files.append(transcribed['cache'])
                 else:
                     result = aligner.run(*transcribed)
-                    # print(f'Result for book {book[1]}:')
-                    # print_result(result, audio_book.duration)
-                    # total_result[0] += result
-                    # total_result[1] += audio_book.duration
+                    print(f'Result for book {transcribed[0]}:')
+                    print_result(result, transcribed[1]['duration'])
+                    total_result[0] += result
+                    total_result[1] += transcribed[1]['duration']
             # except Exception as ex:
             #     print(f'Exception with book {book[1]}:\n {str(ex)}')
 

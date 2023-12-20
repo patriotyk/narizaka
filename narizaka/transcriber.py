@@ -25,7 +25,7 @@ class BackendWorker(Process):
             while book_files := self.book_files_queue.get_nowait():
                 sr = 16000
                 filename_16, _ = convert_media(book_files[1], format='wav', sr=sr)
-
+                print(f'Transcribing {book_files[1]}')
                 self._transcribe_one(filename_16, book_files[2])
                 self.transcribed.put_nowait({'text_book_filename': book_files[0], 
                                             'audio_16': filename_16, 
@@ -36,9 +36,7 @@ class BackendWorker(Process):
 
     def _transcribe_one(self, filename_16, cache_file):
         
-        print(f'Transcribing {filename_16}')
         result = self.backend.transcribe(filename_16)
-
         with open(cache_file, 'w') as w:
             data = []
             for r in result.all_words():
@@ -65,13 +63,16 @@ class Transcriber():
             return hashlib.sha256(data).hexdigest()
     
     def add(self, text_book_path, audio_book):
-        self.books[text_book_path] = OrderedDict()
+        self.books[text_book_path] = {
+            'duration': audio_book.duration,
+            'files': OrderedDict()
+        }
         for audio_file in audio_book.audio_files:
             cash_file = self.cache_path / pathlib.Path(self.calc_current_hash(audio_file)+'.json')
             if cash_file.exists():
-                self.books[text_book_path][audio_file] = {'cache': cash_file, 'audio_16': None}
+                self.books[text_book_path]['files'][audio_file] = {'cache': cash_file, 'audio_16': None}
             else:
-                self.books[text_book_path][audio_file] = {'cache': None, 'audio_16': None}
+                self.books[text_book_path]['files'][audio_file] = {'cache': None, 'audio_16': None}
                 self.audio_files_q.put_nowait((text_book_path, audio_file, cash_file,))
         
 
@@ -84,8 +85,8 @@ class Transcriber():
             self.workers.append(worker)
         try:
             while transcribed := self.transcribed.get():
-                self.books[transcribed['text_book_filename']][transcribed['audio_file']] =  {'cache': transcribed['cache_file'], 'audio_16': transcribed['audio_16']}
-                if all([ v.get('cache')  for v in self.books[transcribed['text_book_filename']].values()]):
+                self.books[transcribed['text_book_filename']]['files'][transcribed['audio_file']] =  {'cache': transcribed['cache_file'], 'audio_16': transcribed['audio_16']}
+                if all([ v.get('cache')  for v in self.books[transcribed['text_book_filename']]['files'].values()]):
                     yield transcribed['text_book_filename'], self.books[transcribed['text_book_filename']]
                     del self.books[transcribed['text_book_filename']]
         except Empty:

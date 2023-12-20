@@ -162,7 +162,7 @@ class Aligner():
         )
         
         samples_buffer_length = 8000 * 44100
-        for segments in self.segments(transcribed):
+        for segments in self.segments(transcribed['files']):
             last_sample = 0
             current_waveform_orig = None
             orig_flac = segments['flac_path']
