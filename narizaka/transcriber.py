@@ -2,6 +2,7 @@ import os
 import pathlib
 import json
 import hashlib
+import torch
 from collections import OrderedDict
 from dataclasses import asdict
 from multiprocessing import Queue, Process
@@ -54,7 +55,7 @@ class Transcriber():
         self.device = device
         self.audio_files_q = Queue()
         self.transcribed = Queue()
-        self.devices = 2# torch.cuda.device_count()
+        self.devices = 2 if device != 'cuda' else torch.cuda.device_count()
         self.books = {}
 
     def calc_current_hash(self, current_file):
