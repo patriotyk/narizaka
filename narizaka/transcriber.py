@@ -3,12 +3,15 @@ import pathlib
 import json
 import hashlib
 import torch
+import multiprocessing
 from collections import OrderedDict
 from dataclasses import asdict
 from multiprocessing import Queue, Process
 from queue import Empty
 from narizaka.utils import convert_media
 from narizaka.asr_backends.faster_whisper import FasterWhisperTranscriber
+
+multiprocessing.set_start_method('spawn', force=True)
 
 class BackendWorker(Process):
     def __init__(self, device, device_index, book_files_queue, output_queue) -> None:
