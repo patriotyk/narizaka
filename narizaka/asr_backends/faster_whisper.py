@@ -14,7 +14,7 @@ class FasterWhisperTranscriber():
         self.number_tokens  = self.number_tokens + [
             i 
             for i in range(tokenizer.eot)
-            if all(c in "0123456789%№§IVXC" for c in tokenizer.decode([i]).removeprefix(" "))
+            if all(c in "0123456789%№§IVXC$£₴€" for c in tokenizer.decode([i]).removeprefix(" "))
         ]
 
 
