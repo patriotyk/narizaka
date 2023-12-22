@@ -58,7 +58,7 @@ class Transcriber():
         self.device = device
         self.audio_files_q = Queue()
         self.transcribed = Queue()
-        self.devices = 2 if device != 'cuda' else torch.cuda.device_count()
+        self.devices = torch.cuda.device_count() if torch.cuda.device_count() > 0 and device != 'cpu' else 2
         self.books = {}
 
     def calc_current_hash(self, current_file):
