@@ -74,7 +74,7 @@ ordinal_instrumental_feminine_case = ('ю')
 # ordinal_locative_masculine_case = ordinal_dative_masculine_case
 # ordinal_locative_feminine_case = ordinal_dative_feminine_case
 
-numcases_r = regex.compile(rf'((?:^|\s)(\d+)\s*(\-?)(([^\d]*?)|(\-\.+))\.?)(\s+.|$)', regex.IGNORECASE, regex.UNICODE)
+numcases_r = regex.compile(rf'((?:^|\s)(\d+)\s*(\-?)(([^\d,]*?)|(\-\.+))(?:\.|,|:|-)?)(\s+[^,.:\-]|$)', regex.IGNORECASE, regex.UNICODE)
 
 print(numcases_r)
 cardinal_genitive_endings = ('а', 'e', 'є', 'й')
@@ -89,7 +89,7 @@ def number_form(number):
         return 2
 
 def replace_cases(number, dash, case='', next_word=''):
-    print(number)
+    print(f'{number}, {dash}, {case}, {next_word}')
     gender = 'masculine'
     m_case = 'nominative'
     to = 'ordinal'
