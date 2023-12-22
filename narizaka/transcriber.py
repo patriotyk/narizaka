@@ -26,7 +26,7 @@ class BackendWorker(Process):
     def run(self):
         self.backend = FasterWhisperTranscriber(self.device, self.device_index)
         try:
-            while book_files := self.book_files_queue.get_nowait():
+            while book_files := self.book_files_queue.get(timeout=10):
                 sr = 16000
                 filename_16, _ = convert_media(book_files[1], format='wav', sr=sr)
                 print(f'Transcribing {book_files[1]}')
@@ -36,7 +36,7 @@ class BackendWorker(Process):
                                             'audio_file': book_files[1], 
                                             'cache_file': book_files[2]})
         except Empty:
-            self.transcribed.put_nowait(None)
+            print('Done worker thread')
 
     def _transcribe_one(self, filename_16, cache_file):
         
@@ -87,14 +87,16 @@ class Transcriber():
             worker = BackendWorker(self.device, index, self.audio_files_q, self.transcribed)
             worker.start()
             self.workers.append(worker)
-        try:
-            while transcribed := self.transcribed.get():
+
+        while any([w.is_alive() for w in self.workers]):
+            try:
+                transcribed = self.transcribed.get(timeout=20)
                 self.books[transcribed['text_book_filename']]['files'][transcribed['audio_file']] =  {'cache': transcribed['cache_file'], 'audio_16': transcribed['audio_16']}
                 if all([ v.get('cache')  for v in self.books[transcribed['text_book_filename']]['files'].values()]):
                     yield transcribed['text_book_filename'], self.books[transcribed['text_book_filename']]
                     del self.books[transcribed['text_book_filename']]
-        except Empty:
-            pass
+            except Empty:
+                pass
         for text_book, audio_files in self.books.items():
             yield text_book, audio_files
     
