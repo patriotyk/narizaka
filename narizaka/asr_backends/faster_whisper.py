@@ -3,7 +3,7 @@ from faster_whisper.tokenizer import Tokenizer
 
 class FasterWhisperTranscriber():
     def __init__(self, device, device_index) -> None:
-        self.model = stable_whisper.load_faster_whisper('large-v3', device=device, device_index=device_index if device =='cuda' else 0, cpu_threads=2)    
+        self.model = stable_whisper.load_faster_whisper('large-v2', device=device, device_index=device_index, cpu_threads=2)    
         tokenizer = Tokenizer(
                     self.model.hf_tokenizer,
                     True,
