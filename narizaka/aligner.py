@@ -161,13 +161,14 @@ class Aligner():
             delimiter='|'
         )
         
-        samples_buffer_length = 8000 * 44100
         for segments in self.segments(transcribed['files']):
-            last_sample = 0
             current_waveform_orig = None
             orig_flac = segments['flac_path']
             current_sr  = segments['flac_sr'] if not self.sr else self.sr
             orig_name = segments['orig_name']
+            current_waveform_orig, orig_sr = torchaudio.load(orig_flac)
+            if self.sr:
+                current_waveform_orig = resample(current_waveform_orig, orig_sr, self.sr, lowpass_filter_width=128, resampling_method="sinc_interp_kaiser")
 
             for segment in segments['segments']:
                 print(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}')
@@ -179,17 +180,8 @@ class Aligner():
                         continue
 
                     filename = orig_name+f"_{segment['start']:.3f}-{segment['end']:.3f}.flac"
-                    end = int(segment['end'] * current_sr)
-                    if end > last_sample:
-                        chunk, orig_sr = torchaudio.load(orig_flac, frame_offset=last_sample, num_frames=samples_buffer_length)
-                        if self.sr:
-                            chunk = resample(chunk, orig_sr, self.sr, lowpass_filter_width=128, resampling_method="sinc_interp_kaiser")
-                        if current_waveform_orig != None:
-                            current_waveform_orig = torch.cat((current_waveform_orig, chunk), -1)
-                        else:
-                            current_waveform_orig = chunk
-                        last_sample =  last_sample + samples_buffer_length
                     start = int(segment['start'] * current_sr)
+                    end = int(segment['end'] * current_sr)
                     
                     segment_wave = current_waveform_orig[:, start:end]
                     torchaudio.save(str(audio_output.joinpath(filename)), segment_wave, current_sr)
