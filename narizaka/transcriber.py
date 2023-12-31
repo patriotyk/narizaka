@@ -55,7 +55,7 @@ class Transcriber():
         if not self.cache_path.exists():
             os.makedirs(self.cache_path, exist_ok=True)
 
-        self.device = device
+        self.device = 'cuda' if torch.cuda.device_count() > 0 and device != 'cpu' else 'cpu'
         self.audio_files_q = Queue()
         self.transcribed = Queue()
         self.devices = torch.cuda.device_count() if torch.cuda.device_count() > 0 and device != 'cpu' else 2
@@ -84,7 +84,7 @@ class Transcriber():
     def transcribe(self):
         self.workers = []
         for index in range(self.devices):
-            worker = BackendWorker(self.device, index, self.audio_files_q, self.transcribed)
+            worker = BackendWorker(self.device, index if self.device == 'cuda' else 0, self.audio_files_q, self.transcribed)
             worker.start()
             self.workers.append(worker)
 
