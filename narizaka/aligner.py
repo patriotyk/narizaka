@@ -166,9 +166,11 @@ class Aligner():
             orig_flac = segments['flac_path']
             current_sr  = segments['flac_sr'] if not self.sr else self.sr
             orig_name = segments['orig_name']
-            current_waveform_orig, orig_sr = torchaudio.load(orig_flac)
             if self.sr:
-                current_waveform_orig = resample(current_waveform_orig, orig_sr, self.sr, lowpass_filter_width=128, resampling_method="sinc_interp_kaiser")
+                orig_flac, _ = utils.convert_media(orig_flac, sr=self.sr)
+                #Resampling with torchaudio requires lot of memory, because we load original file to memory, for big files even 32 GB of memory is not enought
+                #current_waveform_orig = resample(current_waveform_orig, orig_sr, self.sr, lowpass_filter_width=128, resampling_method="sinc_interp_kaiser")
+            current_waveform_orig, _ = torchaudio.load(orig_flac)
 
             for segment in segments['segments']:
                 print(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}')
