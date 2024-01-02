@@ -1,8 +1,7 @@
 import magic
+from glob import glob
 import ffmpeg
 import pathlib
-from dataclasses import asdict
-from narizaka import utils
 
 
 
@@ -13,9 +12,10 @@ class AudioBook():
             raise Exception('Audio path doesn\'t exists')
 
         if filename.is_dir():
-            files = list(filename.rglob("*"))
+            files = list(glob(f'{filename.resolve()}/**', recursive=True))
             files.sort()
             for f in files:
+                f = pathlib.Path(f)
                 if not f.is_dir() and self._is_media(f):
                     self.audio_files.append(f)
             if not self.audio_files:
