@@ -17,7 +17,7 @@ class TextBook:
         else:
             fl, fb2_file = tempfile.mkstemp(suffix='.fb2')
             os.close(fl)
-            os.system(f'pandoc {path} -o {fb2_file}')
+            os.system(f'pandoc "{path}" -o {fb2_file}')
             self.path = fb2_file
         self.iter = ET.parse(self.path).getroot().iter()
 
