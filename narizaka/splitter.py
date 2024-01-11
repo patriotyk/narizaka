@@ -13,7 +13,7 @@ class Splitter():
                 energy_threshold=threshold # threshold of detection
             ):
                 r.meta = {'start': r.meta.start+region.meta.start, 'end': r.meta.end+region.meta.start}
-                if r.duration > 10.0 and deep:
+                if r.duration > 8.0 and deep:
                     regions = _split(r, threshold+2, deep-1)
                     if len(regions)> 1:
                         audio_regions = audio_regions + regions
@@ -62,10 +62,6 @@ class Splitter():
                         temp_reg = None
                         start_word = found[2]+1
                 
-            # elif gap_dur > 3.5: #FIXME Should find split here
-            #     print('GAPPP')
-            #     temp_reg = None
-
 
         ready_segment = {}
         for segment in regions_by_punct:
@@ -73,7 +69,8 @@ class Splitter():
                 ready_segment = segment
                 continue
 
-            if ready_segment['text'].endswith(',') and (segment['end'] - ready_segment['start']) < 10:
+            if ((segment['start'] - ready_segment['end']) < 0.4 and ready_segment['text'][-1] in [',', ':', '-', '»', '\'', '.', '?', '!'] and (segment['end'] - ready_segment['start']) < 11)\
+                or (ready_segment['text'][-1] in [',', ':', '-', '»', '\'']  and (segment['end'] - ready_segment['start']) < 20):
                 ready_segment['end'] = segment['end']
                 ready_segment['text'] += segment['text']
             else:
