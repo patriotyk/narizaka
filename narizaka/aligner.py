@@ -24,8 +24,9 @@ stressify = Stressifier()
 bad_text = regex.compile('[0-9\p{L}--[а-яіїєґ]]', regex.VERSION1|regex.IGNORECASE)
 
 class Aligner():
-    def __init__(self, output: pathlib.Path, sr: int, columns: str) -> None:
+    def __init__(self, output: pathlib.Path, sr: int, columns: str, audio_format: str) -> None:
         self.output = output
+        self.audio_format = audio_format
         self.sr = sr
         self.splitter = Splitter()
         self.columns = columns.split(',')
@@ -208,7 +209,7 @@ class Aligner():
                     if not self.pases_filter(segment):
                         continue
 
-                    filename = orig_name+f"_{segment['start']:.3f}-{segment['end']:.3f}.flac"
+                    filename = orig_name+f"_{segment['start']:.3f}-{segment['end']:.3f}.{self.audio_format}"
                     start = int(segment['start'] * current_sr)
                     end = int(segment['end'] * current_sr)
                     
