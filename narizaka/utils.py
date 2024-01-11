@@ -11,9 +11,9 @@ def convert_media(filename, format='flac', sr=None):
         os.close(fl)
         stream = ffmpeg.input(filename)
         if sr:
-            stream = ffmpeg.output(stream, audio_file, acodec='pcm_s16le' if format == 'wav' else 'flac' , ar=sr, loglevel='panic')
+            stream = ffmpeg.output(stream, audio_file, acodec='pcm_s16le' if format == 'wav' else 'flac' , ar=sr, ac=1, loglevel='panic')
         else:
-            stream = ffmpeg.output(stream, audio_file,  acodec='pcm_s16le' if format == 'wav' else 'flac' , loglevel='panic')
+            stream = ffmpeg.output(stream, audio_file,  acodec='pcm_s16le' if format == 'wav' else 'flac' , ac=1, loglevel='panic')
         ffmpeg.run(stream, overwrite_output=True)
         return audio_file, sr or int(probe['streams'][0]['sample_rate'])
     else:
