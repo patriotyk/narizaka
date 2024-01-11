@@ -21,7 +21,7 @@ from ipa_uk import ipa
 stressify = Stressifier()
 
 
-bad_text = regex.compile('[\p{L}--[а-яіїєґ]]', regex.VERSION1|regex.IGNORECASE)
+bad_text = regex.compile('[0-9\p{L}--[а-яіїєґ]]', regex.VERSION1|regex.IGNORECASE)
 
 class Aligner():
     def __init__(self, output: pathlib.Path, sr: int, columns: str) -> None:
@@ -34,7 +34,7 @@ class Aligner():
         if segment['end']-segment['start'] < 1.0 or segment['end']-segment['start'] > 35:
             print('Skipped because of length')
             return False
-        if bad_text.search(segment['text']):
+        if bad_text.search(segment['sentence']):
             print('Skipped because contains inapropirate characters')
             return False
         return True
@@ -136,6 +136,31 @@ class Aligner():
                 'flac_sr': self.current_sr_orig
             }
 
+    def normalize_loudness(self, wav: torch.Tensor, sample_rate: int, loudness_headroom_db: float = 12,
+                        energy_floor: float = 2e-3):
+        """Normalize an input signal to a user loudness in dB LKFS.
+        Audio loudness is defined according to the ITU-R BS.1770-4 recommendation.
+
+        Args:
+            wav (torch.Tensor): Input multichannel audio data.
+            sample_rate (int): Sample rate.
+            loudness_headroom_db (float): Target loudness of the output in dB LUFS.
+            energy_floor (float): anything below that RMS level will not be rescaled.
+        Returns:
+            output (torch.Tensor): Loudness normalized output data.
+        """
+        energy = wav.pow(2).mean().sqrt().item()
+        if energy < energy_floor:
+            return wav
+        transform = torchaudio.transforms.Loudness(sample_rate)
+        input_loudness_db = transform(wav).item()
+        # calculate the gain needed to scale to the desired loudness level
+        delta_loudness = -loudness_headroom_db - input_loudness_db
+        gain = 10.0 ** (delta_loudness / 20.0)
+        output = gain * wav
+        assert output.isfinite().all(), (input_loudness_db, wav.pow(2).mean().sqrt())
+        return output
+
     def run(self, book: pathlib.Path, transcribed):
         self.normpos = []
         self.denorm = []
@@ -170,13 +195,15 @@ class Aligner():
                 orig_flac, _ = utils.convert_media(orig_flac, sr=self.sr)
                 #Resampling with torchaudio requires lot of memory, because we load original file to memory, for big files even 32 GB of memory is not enought
                 #current_waveform_orig = resample(current_waveform_orig, orig_sr, self.sr, lowpass_filter_width=128, resampling_method="sinc_interp_kaiser")
-            current_waveform_orig, _ = torchaudio.load(orig_flac)
+            current_waveform_orig, sr = torchaudio.load(orig_flac, normalize=True)
+            current_waveform_orig = self.normalize_loudness(current_waveform_orig, sr)
 
             for segment in segments['segments']:
                 print(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}')
 
                 match = self.find_match(segment["text"])
                 if match.get('matched'):
+                    segment['sentence'] = match["sentence"]
                     print(f'MATCHED: {match["sentence"]}')
                     if not self.pases_filter(segment):
                         continue
@@ -188,7 +215,7 @@ class Aligner():
                     segment_wave = current_waveform_orig[:, start:end]
                     torchaudio.save(str(audio_output.joinpath(filename)), segment_wave, current_sr)
 
-                    segment['sentence'] = match["sentence"]
+                    
                     segment['duration'] = segment['end'] - segment['start']
                     segment['audio'] = self.book.name+ '/' + filename
                     segment['ipa'] = ipa(stressify(match["sentence"]), False)
@@ -198,6 +225,5 @@ class Aligner():
 
                 else:
                     print(f'NOT MATCHED: {match["book_text"]}')
-                pass
         dfp.close()
         return self.recognised_duration
