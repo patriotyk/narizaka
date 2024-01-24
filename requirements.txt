@@ -5,7 +5,6 @@ ffmpeg-python
 regex
 fuzzysearch
 python-magic
-num2words
 pandas
 torch
 torchaudio
@@ -13,6 +12,6 @@ auditok
 stable-ts
 retry2
 ukrainian_word_stress
-ipa_uk@git+https://github.com/lang-uk/ipa-uk.git
+ipa_uk@git+https://github.com/patriotyk/ipa-uk.git
 num2words@git+https://github.com/patriotyk/num2words.git
 
