@@ -137,7 +137,7 @@ class Aligner():
                 'flac_sr': self.current_sr_orig
             }
 
-    def normalize_loudness(self, wav: torch.Tensor, sample_rate: int, loudness_headroom_db: float = 12,
+    def normalize_loudness(self, wav: torch.Tensor, sample_rate: int, loudness_headroom_db: float = 18,
                         energy_floor: float = 2e-3):
         """Normalize an input signal to a user loudness in dB LKFS.
         Audio loudness is defined according to the ITU-R BS.1770-4 recommendation.
