@@ -47,17 +47,17 @@ def find_books(args):
                 if not book_item.is_dir():
                     mimetype = magic.from_file(filename=book_item, mime=True)
                     if mimetype in supported_mimes:
-                        return (book_or_group, book_item)
+                        return book_item
         return None
     for speaker_id, book_or_group in enumerate(args.data.iterdir()):
         if book_or_group.is_dir():
             if found_book:=find_one_book(book_or_group):
-                found_books.append((AudioBook(found[0], speaker_id=speaker_id), found[1]))
+                found_books.append((AudioBook(book_or_group, speaker_id=speaker_id), found))
             else:
                 for group_item in book_or_group.iterdir():
                     if group_item.is_dir():
                         if found:=find_one_book(group_item):
-                            found_books.append((AudioBook(found[0], speaker_id=speaker_id), found[1]))
+                            found_books.append((AudioBook(group_item, speaker_id=speaker_id), found))
 
     return found_books
 
