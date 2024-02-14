@@ -62,6 +62,7 @@ def find_books(args):
     return found_books
 
 audio_formats = ['flac', 'wav']
+columns = 'audio,speaker_id,ipa,sentence,duration'
 def run():
     parser = argparse.ArgumentParser(description = 'Utility to make audio dataset from  audio and text book')
 
@@ -75,7 +76,7 @@ def run():
     parser.add_argument('-c', action='store_true',  help='Cache only mode', default=False)
     parser.add_argument('-sr',  type=int, help='Resample to', default=0)
     parser.add_argument('-audio_format',  type=str, help=f'Output audio format, supported values is: {", ".join(audio_formats)}', default='flac')
-    parser.add_argument('-columns',  type=str, help='Columns to include, default values is "audio,ipa,sentence,duration,speaker_id", this is all possible columns', default='audio,ipa,sentence,duration,speaker_id')
+    parser.add_argument('-columns',  type=str, help=f'Columns to include, default values is "{columns}", this is all possible columns', default=columns)
 
 
 
