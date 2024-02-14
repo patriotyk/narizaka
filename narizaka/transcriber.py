@@ -69,6 +69,7 @@ class Transcriber():
     def add(self, text_book_path, audio_book):
         self.books[text_book_path] = {
             'duration': audio_book.duration,
+            'speaker_id': audio_book.speaker_id,
             'files': OrderedDict()
         }
         for audio_file in audio_book.audio_files:

@@ -220,6 +220,7 @@ class Aligner():
                     segment['duration'] = segment['end'] - segment['start']
                     segment['audio'] = self.book.name+ '/' + filename
                     segment['ipa'] = ipa(stressify(match["sentence"]), False)
+                    segment['speaker_id'] = transcribed['speaker_id']
 
                     ds.writerow(segment)
                     self.recognised_duration += segment['duration']

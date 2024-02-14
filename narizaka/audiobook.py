@@ -6,7 +6,8 @@ import pathlib
 
 
 class AudioBook():
-    def __init__(self, filename: pathlib.Path) -> None:
+    def __init__(self, filename: pathlib.Path, speaker_id=None) -> None:
+        self.speaker_id = speaker_id
         self.audio_files = []
         if not filename.exists():
             raise Exception('Audio path doesn\'t exists')

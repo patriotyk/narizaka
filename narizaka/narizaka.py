@@ -38,20 +38,31 @@ def find_books(args):
                     found_book = item
                     break
     if found_book:
-        return [(args.data, item)]
+        return [(AudioBook(args.data), item)]
     
     print('Root directory doesn\'t contain any text files, checking subdirectories...\n' )
     found_books = []
-    for book_dir in args.data.iterdir():
-        if book_dir.is_dir():
-            for book_item in book_dir.iterdir():
+    def find_one_book(book_dir):
+        for book_item in book_dir.iterdir():
                 if not book_item.is_dir():
                     mimetype = magic.from_file(filename=book_item, mime=True)
                     if mimetype in supported_mimes:
-                        found_books.append((book_dir, book_item))
+                        return book_item
+        return None
+    for speaker_id, book_or_group in enumerate(args.data.iterdir()):
+        if book_or_group.is_dir():
+            if found_book:=find_one_book(book_or_group):
+                found_books.append((AudioBook(book_or_group, speaker_id=speaker_id), found))
+            else:
+                for group_item in book_or_group.iterdir():
+                    if group_item.is_dir():
+                        if found:=find_one_book(group_item):
+                            found_books.append((AudioBook(group_item, speaker_id=speaker_id), found))
+
     return found_books
 
 audio_formats = ['flac', 'wav']
+columns = 'audio,speaker_id,ipa,sentence,duration'
 def run():
     parser = argparse.ArgumentParser(description = 'Utility to make audio dataset from  audio and text book')
 
@@ -65,7 +76,7 @@ def run():
     parser.add_argument('-c', action='store_true',  help='Cache only mode', default=False)
     parser.add_argument('-sr',  type=int, help='Resample to', default=0)
     parser.add_argument('-audio_format',  type=str, help=f'Output audio format, supported values is: {", ".join(audio_formats)}', default='flac')
-    parser.add_argument('-columns',  type=str, help='Columns to include, default values is "audio,ipa,sentence,duration", this is all possible columns', default='audio,ipa,sentence,duration')
+    parser.add_argument('-columns',  type=str, help=f'Columns to include, default values is "{columns}", this is all possible columns', default=columns)
 
 
 
@@ -84,25 +95,25 @@ def run():
         print(f"The following books have been found:")
         total_result = [0,0]
         for book in found_books:
-            print(book[1])
+            print(book[0].speaker_id, book[1])
 
         transcriber = Transcriber(device=args.device)
         for book in found_books:
-            transcriber.add(book[1],  AudioBook(book[0]))
+            transcriber.add(book[1],  book[0])
 
         cache_files = []
-        for transcribed in transcriber.transcribe():
+        for text_book_path, transcribed in transcriber.transcribe():
                 
             #try:
                 if args.c:
-                    for _, transcribed in transcribed[1]['files'].items():
+                    for _, transcribed in transcribed['files'].items():
                         cache_files.append(transcribed['cache'])
                 else:
-                    result = aligner.run(*transcribed)
-                    print(f'Result for book {transcribed[0]}:')
-                    print_result(result, transcribed[1]['duration'])
+                    result = aligner.run(text_book_path, transcribed)
+                    print(f'Result for book {text_book_path}:')
+                    print_result(result, transcribed['duration'])
                     total_result[0] += result
-                    total_result[1] += transcribed[1]['duration']
+                    total_result[1] += transcribed['duration']
             # except Exception as ex:
             #     print(f'Exception with book {book[1]}:\n {str(ex)}')
 
