@@ -21,6 +21,10 @@ brew install ffmpeg pandoc libmagic
 ```
 
 Then you can install `narizaka`:
+
+> **⚠ WARNING**
+> Because we have direct dependancies to github temporary we are not able to push `narizaka` to pypi. There is very old version.
+
 ```
 pip install narizaka
 ```
@@ -36,6 +40,12 @@ git clone https://github.com/patriotyk/narizaka.git
 pip install -e narizaka/
 ```
 Flag `-e` means that you can edit source files in the directory where you have cloned this project and they will be reflected when you run command `narizaka`
+
+Every tagged commit on `main` brnach automatically pushes ro the docker hub. So you can also pull this images:
+
+```
+docker pull patriotyk/narizaka:latest
+```
 
 ## How to use
 
