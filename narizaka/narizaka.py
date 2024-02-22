@@ -52,7 +52,7 @@ def find_books(args):
     for speaker_id, book_or_group in enumerate(args.data.iterdir()):
         if book_or_group.is_dir():
             if found_book:=find_one_book(book_or_group):
-                found_books.append((AudioBook(book_or_group, speaker_id=speaker_id), found))
+                found_books.append((AudioBook(book_or_group, speaker_id=speaker_id), found_book))
             else:
                 for group_item in book_or_group.iterdir():
                     if group_item.is_dir():
