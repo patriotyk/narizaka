@@ -44,7 +44,7 @@ class BackendWorker(Process):
         with open(cache_file, 'w') as w:
             data = []
             for r in result.all_words():
-                data.append(asdict(r))
+                data.append(r.to_dict())
             w.write(json.dumps(data, ensure_ascii=False, indent=4))
 
 

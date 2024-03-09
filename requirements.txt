@@ -9,7 +9,7 @@ pandas
 torch
 torchaudio
 auditok
-stable-ts
+stable-ts==2.15.8
 retry2
 ukrainian_word_stress
 ipa_uk@git+https://github.com/patriotyk/ipa-uk.git
