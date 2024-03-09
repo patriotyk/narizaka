@@ -200,6 +200,8 @@ class Aligner():
             current_waveform_orig = self.normalize_loudness(current_waveform_orig, sr)
 
             for segment in segments['segments']:
+                if not segment:
+                    continue
                 print(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}')
 
                 match = self.find_match(segment["text"])
