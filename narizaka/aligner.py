@@ -12,7 +12,7 @@ from narizaka.textnormalizer import norm
 from fuzzysearch import find_near_matches
 from csv import DictWriter, QUOTE_MINIMAL
 from faster_whisper.utils import format_timestamp
-import torch
+from narizaka.segmenter import Segmenter
 import torchaudio
 from torchaudio.functional import resample
 from stable_whisper.result import WordTiming
@@ -118,7 +118,6 @@ class Aligner():
     def segments(self, transcribed):
         for orig_file, transcribed_files in transcribed.items():
             print(f"Using transcribed file from file: {transcribed_files['cache']}")
-            self.orig_flac, self.current_sr_orig  = utils.convert_media(orig_file)
             data = json.load(open(transcribed_files['cache'], 'r'))
             words = []
             for w in data:
@@ -132,35 +131,9 @@ class Aligner():
             segments = self.splitter.split_to_segments(file_16, words)
             yield {
                 'segments': segments,
-                'orig_name': orig_file.name,
-                'flac_path': self.orig_flac,
-                'flac_sr': self.current_sr_orig
+                'orig_name': orig_file,
             }
 
-    def normalize_loudness(self, wav: torch.Tensor, sample_rate: int, loudness_headroom_db: float = 18,
-                        energy_floor: float = 2e-3):
-        """Normalize an input signal to a user loudness in dB LKFS.
-        Audio loudness is defined according to the ITU-R BS.1770-4 recommendation.
-
-        Args:
-            wav (torch.Tensor): Input multichannel audio data.
-            sample_rate (int): Sample rate.
-            loudness_headroom_db (float): Target loudness of the output in dB LUFS.
-            energy_floor (float): anything below that RMS level will not be rescaled.
-        Returns:
-            output (torch.Tensor): Loudness normalized output data.
-        """
-        energy = wav.pow(2).mean().sqrt().item()
-        if energy < energy_floor:
-            return wav
-        transform = torchaudio.transforms.Loudness(sample_rate)
-        input_loudness_db = transform(wav).item()
-        # calculate the gain needed to scale to the desired loudness level
-        delta_loudness = -loudness_headroom_db - input_loudness_db
-        gain = 10.0 ** (delta_loudness / 20.0)
-        output = gain * wav
-        assert output.isfinite().all(), (input_loudness_db, wav.pow(2).mean().sqrt())
-        return output
 
     def run(self, book: pathlib.Path, transcribed):
         self.normpos = []
@@ -186,19 +159,11 @@ class Aligner():
             quoting=QUOTE_MINIMAL,
             delimiter='|'
         )
-        
-        for segments in self.segments(transcribed['files']):
-            current_waveform_orig = None
-            orig_flac = segments['flac_path']
-            current_sr  = segments['flac_sr'] if not self.sr else self.sr
-            orig_name = segments['orig_name']
-            if self.sr:
-                orig_flac, _ = utils.convert_media(orig_flac, sr=self.sr)
-                #Resampling with torchaudio requires lot of memory, because we load original file to memory, for big files even 32 GB of memory is not enought
-                #current_waveform_orig = resample(current_waveform_orig, orig_sr, self.sr, lowpass_filter_width=128, resampling_method="sinc_interp_kaiser")
-            current_waveform_orig, sr = torchaudio.load(orig_flac, normalize=True)
-            current_waveform_orig = self.normalize_loudness(current_waveform_orig, sr)
 
+        segmenter = Segmenter(sr=self.sr)        
+        for segments in self.segments(transcribed['files']):
+
+            orig_name = segments['orig_name']
             for segment in segments['segments']:
                 if not segment:
                     continue
@@ -211,16 +176,13 @@ class Aligner():
                     if not self.pases_filter(segment):
                         continue
 
-                    filename = orig_name+f"_{segment['start']:.3f}-{segment['end']:.3f}.{self.audio_format}"
-                    start = int(segment['start'] * current_sr)
-                    end = int(segment['end'] * current_sr)
-                    
-                    segment_wave = current_waveform_orig[:, start:end]
-                    torchaudio.save(str(audio_output.joinpath(filename)), segment_wave, current_sr)
-
+                    #filename = orig_name+f"_{segment['start']:.3f}-{segment['end']:.3f}.{self.audio_format}"
+                    start = float(segment['start'])
+                    end = float(segment['end'])
+                    filename = segmenter.save(start_time=start, end_time=end)
                     
                     segment['duration'] = segment['end'] - segment['start']
-                    segment['audio'] = self.book.name+ '/' + filename
+                    segment['audio'] = os.path.join(audio_output, filename)
                     segment['ipa'] = ipa(stressify(match["sentence"]), False)
                     segment['speaker_id'] = transcribed['speaker_id']
 
@@ -229,5 +191,6 @@ class Aligner():
 
                 else:
                     print(f'NOT MATCHED: {match["book_text"]}')
+            segmenter.run(str(orig_name), output_folder=audio_output)
         dfp.close()
         return self.recognised_duration
