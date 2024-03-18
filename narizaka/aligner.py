@@ -33,10 +33,10 @@ class Aligner():
 
     def pases_filter(self, segment):
         if segment['end']-segment['start'] < 1.0 or segment['end']-segment['start'] > 35:
-            print('Skipped because of length')
+            #print('Skipped because of length')
             return False
         if bad_text.search(segment['sentence']):
-            print('Skipped because contains inapropirate characters')
+            #print('Skipped because contains inapropirate characters')
             return False
         return True
 
@@ -127,7 +127,6 @@ class Aligner():
                 file_16 = transcribed_files['audio_16']
             else:
                 file_16, _ = utils.convert_media(orig_file, format='wav', sr=16000)
-            print(file_16)
             segments = self.splitter.split_to_segments(file_16, words)
             yield {
                 'segments': segments,

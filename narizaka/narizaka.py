@@ -104,7 +104,7 @@ def run():
 
         cache_files = []
         results = []
-        with Pool(processes=os.cpu_count()) as pool:
+        with Pool(processes=min(os.cpu_count(), len(found_books))) as pool:
             for text_book_path, transcribed in transcriber.transcribe():
                 if args.c:
                     for _, transcribed in transcribed['files'].items():
