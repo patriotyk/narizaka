@@ -9,6 +9,7 @@ from narizaka.aligner import Aligner
 from narizaka.audiobook import AudioBook
 from narizaka.transcriber import Transcriber
 from faster_whisper.utils import format_timestamp
+from multiprocessing import Pool
 
 
 def print_result(recognized, total):
@@ -102,20 +103,23 @@ def run():
             transcriber.add(book[1],  book[0])
 
         cache_files = []
-        for text_book_path, transcribed in transcriber.transcribe():
-                
-            #try:
+        results = []
+        with Pool(processes=os.cpu_count()) as pool:
+            for text_book_path, transcribed in transcriber.transcribe():
                 if args.c:
                     for _, transcribed in transcribed['files'].items():
                         cache_files.append(transcribed['cache'])
                 else:
-                    result = aligner.run(text_book_path, transcribed)
-                    print(f'Result for book {text_book_path}:')
-                    print_result(result, transcribed['duration'])
-                    total_result[0] += result
-                    total_result[1] += transcribed['duration']
-            # except Exception as ex:
-            #     print(f'Exception with book {book[1]}:\n {str(ex)}')
+                    result = pool.apply_async(aligner.run, (text_book_path, transcribed))
+                    results.append((result, transcribed['duration'], text_book_path))
+            for result in results:
+                aligned = result[0].get()
+                print(f'Result for book {result[2]}:')
+                aligned = result[0].get()
+                print_result(aligned, result[1])
+                total_result[0] += aligned
+                total_result[1] += result[1]
+
 
         if args.c:
             if not args.o.exists():
