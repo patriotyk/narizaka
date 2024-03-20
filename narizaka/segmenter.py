@@ -13,11 +13,14 @@ import logging
 logger = logging.getLogger(__name__)
 Gst.init(None)
 
-    
 
 class Segmenter():
-    def __init__(self, sr, lufs=-18):
+    def __init__(self, sr, lufs= -16, format='wav'):
+        if format != 'wav' and format != 'flac':
+            raise Exception(f'Unsupported output format: {format}')
+
         self.sr = sr
+        self.format = format
 
         self.splits = Queue()
         self.current_segment = None
@@ -31,7 +34,6 @@ class Segmenter():
         
         self.src = Gst.ElementFactory.make("filesrc")
         self.pipeline.add(self.src)
-
         
         self.decoder = Gst.ElementFactory.make("decodebin")
         self.pipeline.add(self.decoder)
@@ -48,26 +50,31 @@ class Segmenter():
         self.deint_conn = self.dein.connect("pad-added", self.on_channel_added)
         self.aconv.link(self.dein)
 
-        self.encoder = Gst.ElementFactory.make("wavenc")
+        if format == 'flac':
+            self.encoder = Gst.ElementFactory.make("flacenc")
+            self.encoder.set_property('quality', 8)
+        else:
+            self.encoder = Gst.ElementFactory.make("wavenc")
         self.pipeline.add(self.encoder)
 
         self.anorm = Gst.ElementFactory.make("rgvolume")
         self.pipeline.add(self.anorm)
         self.anorm.set_property("album-mode", False)
         self.anorm.set_property("pre-amp", lufs)
+
+        self.capsfilter = Gst.ElementFactory.make('capsfilter')
+        self.pipeline.add(self.capsfilter)
       
-        if self.sr:
-            self.resample = Gst.ElementFactory.make('audioresample')
-            self.pipeline.add(self.resample)
-            self.resample.set_property('quality', 10)
 
+        self.resample = Gst.ElementFactory.make('audioresample')
+        self.pipeline.add(self.resample)
+        self.resample.set_property('quality', 10)
 
-            self.capsfilter = Gst.ElementFactory.make('capsfilter')
-            self.pipeline.add(self.capsfilter)
-            self.capsfilter.set_property('caps', Gst.Caps.from_string(f'audio/x-raw,rate={sr}'))
-            self.resample.link(self.capsfilter)
+        self.capsfilter.set_property('caps', Gst.Caps.from_string(f'audio/x-raw,rate={sr}'))
+        self.resample.link(self.capsfilter)
         
-            self.capsfilter.link(self.anorm)
+        self.resample.link(self.capsfilter)
+        self.capsfilter.link(self.anorm)
 
 
         self.anorm.link(self.encoder)
@@ -82,17 +89,18 @@ class Segmenter():
 
         src_filesink_pad = self.filesink.get_static_pad('sink')
         src_filesink_pad.add_probe(Gst.PadProbeType.EVENT_FLUSH, self.pad_filesink_probe)
+        
 
         self.src.set_state(Gst.State.NULL)
 
     def on_pad_added(self, el, pad):
-        pad.link(self.aconv.get_static_pad('sink'))
+        sink = self.aconv.get_static_pad('sink')
+        pad.link(sink)
+        
 
     def on_channel_added(self, el, pad):
-        if self.sr:
-            pad.link(self.resample.get_static_pad('sink'))
-        else:
-            pad.link(self.anorm.get_static_pad('sink'))
+        pad.link(self.resample.get_static_pad('sink'))
+
 
     def run(self, location, output_folder):
         self.pipeline.set_state(Gst.State.NULL)
@@ -108,7 +116,7 @@ class Segmenter():
 
     def save(self, start_time, end_time):
         self.splits.put_nowait((start_time, end_time, self.index))
-        file_path = f'segment_{self.index}.wav'
+        file_path = f'segment_{self.index}.{self.format}'
         self.index += 1
         return file_path
 
@@ -122,7 +130,7 @@ class Segmenter():
     
     def do_seek(self):
         split = self.splits.get_nowait()
-        self.current_segment = f'segment_{split[2]}.wav'
+        self.current_segment = f'segment_{split[2]}.{self.format}'
         res = self.pipeline.seek(1.0, Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE |  Gst.SeekFlags.SEGMENT, Gst.SeekType.SET, split[0] * Gst.SECOND, Gst.SeekType.SET, split[1] * Gst.SECOND)
         if not res:
             raise Exception('Can\'t seek')
@@ -150,9 +158,15 @@ class Segmenter():
                 except Empty:
                     self.pipeline.set_state(Gst.State.NULL)
                     self.mainloop.quit()
-                    return Gst.PadProbeReturn.OK
         elif mtype == Gst.MessageType.ERROR:
             err, debug = message.parse_error()
             print("Error: %s: %s\n" % (err, debug))
             bus.post(Gst.Message.new_eos())
+
+#Example
+# s = Segmenter(sr=16000)
+# s.save(0.05, 18.05)
+# s.save(18.85, 21.450000000000003)
+# s.save(21.8, 28.750000000000004)
+# s.run('test.mp3', 'testoutput')
 

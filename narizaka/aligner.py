@@ -159,23 +159,22 @@ class Aligner():
             delimiter='|'
         )
 
-        segmenter = Segmenter(sr=self.sr)        
+        segmenter = Segmenter(sr=self.sr, format=self.audio_format)
         for segments in self.segments(transcribed['files']):
 
             orig_name = segments['orig_name']
             for segment in segments['segments']:
                 if not segment:
                     continue
-                print(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}')
+                #print(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}')
 
                 match = self.find_match(segment["text"])
                 if match.get('matched'):
                     segment['sentence'] = match["sentence"]
-                    print(f'MATCHED: {match["sentence"]}')
+                    #print(f'MATCHED: {match["sentence"]}')
                     if not self.pases_filter(segment):
                         continue
 
-                    #filename = orig_name+f"_{segment['start']:.3f}-{segment['end']:.3f}.{self.audio_format}"
                     start = float(segment['start'])
                     end = float(segment['end'])
                     filename = segmenter.save(start_time=start, end_time=end)
@@ -189,7 +188,8 @@ class Aligner():
                     self.recognised_duration += segment['duration']
 
                 else:
-                    print(f'NOT MATCHED: {match["book_text"]}')
+                    pass
+                    #print(f'NOT MATCHED: {match["book_text"]}')
             segmenter.run(str(orig_name), output_folder=audio_output)
         dfp.close()
         return self.recognised_duration
