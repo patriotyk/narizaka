@@ -76,7 +76,6 @@ def run():
     parser.add_argument('-device',  type=str, help='Device to run on', default='auto')
     parser.add_argument('-c', action='store_true',  help='Cache only mode', default=False)
     parser.add_argument('-sr',  type=int, help='Resample to', default=0)
-    parser.add_argument('-audio_format',  type=str, help=f'Output audio format, supported values is: {", ".join(audio_formats)}', default='flac')
     parser.add_argument('-columns',  type=str, help=f'Columns to include, default values is "{columns}", this is all possible columns', default=columns)
 
 
@@ -85,14 +84,11 @@ def run():
     if not args.data.is_dir():
         print("-data argument should point to the directory")
         sys.exit(-1)
-    if args.audio_format not in audio_formats:
-        print(f"-audio_format {args.audio_format} is not supported.")
-        sys.exit(-1)
 
         
     found_books = find_books(args)
     if found_books:
-        aligner = Aligner(args.o, args.sr, args.columns, args.audio_format)
+        aligner = Aligner(args.o, args.sr, args.columns)
         print(f"The following books have been found:")
         total_result = [0,0]
         for book in found_books:

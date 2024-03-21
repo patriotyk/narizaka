@@ -15,12 +15,9 @@ Gst.init(None)
 
 
 class Segmenter():
-    def __init__(self, sr, lufs= -16, format='wav'):
-        if format != 'wav' and format != 'flac':
-            raise Exception(f'Unsupported output format: {format}')
+    def __init__(self, sr):
 
         self.sr = sr
-        self.format = format
 
         self.splits = Queue()
         self.current_segment = None
@@ -50,17 +47,13 @@ class Segmenter():
         self.deint_conn = self.dein.connect("pad-added", self.on_channel_added)
         self.aconv.link(self.dein)
 
-        if format == 'flac':
-            self.encoder = Gst.ElementFactory.make("flacenc")
-            self.encoder.set_property('quality', 8)
-        else:
-            self.encoder = Gst.ElementFactory.make("wavenc")
+        self.encoder = Gst.ElementFactory.make("wavenc")
         self.pipeline.add(self.encoder)
 
         self.anorm = Gst.ElementFactory.make("rgvolume")
         self.pipeline.add(self.anorm)
         self.anorm.set_property("album-mode", False)
-        self.anorm.set_property("pre-amp", lufs)
+        #self.anorm.set_property("pre-amp", 12)
 
         self.capsfilter = Gst.ElementFactory.make('capsfilter')
         self.pipeline.add(self.capsfilter)
@@ -116,7 +109,7 @@ class Segmenter():
 
     def save(self, start_time, end_time):
         self.splits.put_nowait((start_time, end_time, self.index))
-        file_path = f'segment_{self.index}.{self.format}'
+        file_path = f'segment_{self.index}.wav'
         self.index += 1
         return file_path
 
@@ -130,7 +123,7 @@ class Segmenter():
     
     def do_seek(self):
         split = self.splits.get_nowait()
-        self.current_segment = f'segment_{split[2]}.{self.format}'
+        self.current_segment = f'segment_{split[2]}.wav'
         res = self.pipeline.seek(1.0, Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE |  Gst.SeekFlags.SEGMENT, Gst.SeekType.SET, split[0] * Gst.SECOND, Gst.SeekType.SET, split[1] * Gst.SECOND)
         if not res:
             raise Exception('Can\'t seek')
@@ -164,9 +157,9 @@ class Segmenter():
             bus.post(Gst.Message.new_eos())
 
 #Example
-# s = Segmenter(sr=16000)
+# s = Segmenter(sr=24000)
 # s.save(0.05, 18.05)
 # s.save(18.85, 21.450000000000003)
 # s.save(21.8, 28.750000000000004)
-# s.run('test.mp3', 'testoutput')
+# s.run('test_data/ggg.mp3', 'testoutput')
 
