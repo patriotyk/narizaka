@@ -7,7 +7,7 @@ import pathlib
 import xml.etree.ElementTree as ET
 
 class TextBook:
-    def __init__(self, path, min_text_length=10000) -> None:
+    def __init__(self, path, min_text_length=40000) -> None:
         super().__init__()
         self.name = path.stem
         self.min_text_length = min_text_length

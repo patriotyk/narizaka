@@ -124,7 +124,8 @@ class Segmenter():
     def do_seek(self):
         split = self.splits.get_nowait()
         self.current_segment = f'segment_{split[2]}.wav'
-        res = self.pipeline.seek(1.0, Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE |  Gst.SeekFlags.SEGMENT, Gst.SeekType.SET, split[0] * Gst.SECOND, Gst.SeekType.SET, split[1] * Gst.SECOND)
+        seek_flags = Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE |  Gst.SeekFlags.SEGMENT
+        res = self.pipeline.seek(1.0, Gst.Format.TIME, seek_flags, Gst.SeekType.SET, split[0] * Gst.SECOND, Gst.SeekType.SET, split[1] * Gst.SECOND)
         if not res:
             raise Exception('Can\'t seek')
  
