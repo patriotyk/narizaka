@@ -139,7 +139,7 @@ class Segmenter():
 
         self.mainloop.run()
         self._reset()
-        self.splits = Queue()
+        #self.splits = Queue()
     
 
     def save(self, start_time, end_time):
@@ -173,8 +173,12 @@ class Segmenter():
             self.mainloop.quit()
         elif message.type == Gst.MessageType.APPLICATION:
             if message.get_structure().get_name() == "prelloled":
-                self.do_seek()
-                self.pipeline.set_state(Gst.State.PLAYING)
+                try:
+                    self.do_seek()
+                    self.pipeline.set_state(Gst.State.PLAYING)
+                except Empty:
+                    bus.post(Gst.Message.new_eos())
+                    return
         elif mtype == Gst.MessageType.SEGMENT_DONE:
             try:
                 self.do_seek()
