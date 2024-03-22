@@ -22,6 +22,8 @@ class Segmenter():
         self.splits = Queue()
         self.current_segment = None
         self.index = 0
+        self.prerolled = False
+
         
         self.pipeline = Gst.Pipeline()
         self.mainloop = GLib.MainLoop()
@@ -36,6 +38,7 @@ class Segmenter():
         self.pipeline.add(self.decoder)
         self.decoder.set_property('caps', Gst.Caps.from_string('audio/x-raw'))
         self.decoder.connect("pad-added", self.on_pad_added)
+        
         self.src.link(self.decoder)
 
         self.aconv = Gst.ElementFactory.make('audioconvert')
@@ -45,6 +48,7 @@ class Segmenter():
         self.dein = Gst.ElementFactory.make('deinterleave')
         self.pipeline.add(self.dein)
         self.deint_conn = self.dein.connect("pad-added", self.on_channel_added)
+        self.dein.connect("no-more-pads", self.no_more_pads)
         self.aconv.link(self.dein)
 
         self.encoder = Gst.ElementFactory.make("wavenc")
@@ -78,7 +82,7 @@ class Segmenter():
         self.filesink.set_property('buffer-mode', 2)
         self.pipeline.add(self.filesink)
         self.encoder.link(self.filesink)
-        self.filesink.set_property("location",  tempfile.NamedTemporaryFile().name)
+
 
         src_filesink_pad = self.filesink.get_static_pad('sink')
         src_filesink_pad.add_probe(Gst.PadProbeType.EVENT_FLUSH, self.pad_filesink_probe)
@@ -86,25 +90,56 @@ class Segmenter():
 
         self.src.set_state(Gst.State.NULL)
 
+    
+    def probe_blocked(self, el, info):
+        if self.prerolled:
+            return Gst.PadProbeReturn.REMOVE
+        return Gst.PadProbeReturn.OK
+
+    
     def on_pad_added(self, el, pad):
+        if self.prerolled:
+            return
         sink = self.aconv.get_static_pad('sink')
         pad.link(sink)
-        
+    
+
+    def no_more_pads(self, el):
+        if self.prerolled:
+            return
+        self.prerolled = True
+        self.custom_message('prelloled')
+
+    def custom_message(self, name):
+        custom_structure = Gst.Structure.new_empty(name)
+        custom_message = Gst.Message.new_application(None, custom_structure)
+        self.bus.post(custom_message)
 
     def on_channel_added(self, el, pad):
+        if self.prerolled:
+            return
+        pad.add_probe(Gst.PadProbeType.BLOCK_DOWNSTREAM, self.probe_blocked)
         pad.link(self.resample.get_static_pad('sink'))
 
 
+    def _reset(self):
+        self.index = 0
+        self.current_segment = f'segment_0.wav'
+        self.filesink.set_property("location", os.path.join(self.output_folder,self.current_segment))
+        self.prerolled = False
+        
+    
     def run(self, location, output_folder):
         self.pipeline.set_state(Gst.State.NULL)
         self.output_folder = output_folder
         os.makedirs(output_folder, exist_ok=True)
         self.src.set_property("location", location)
-        self.pipeline.set_state(Gst.State.PLAYING)
+        self._reset()
+        self.pipeline.set_state(Gst.State.PAUSED)
+
         self.mainloop.run()
+        self._reset()
         self.splits = Queue()
-        self.current_segment = None
-        self.filesink.set_property("location",  tempfile.NamedTemporaryFile().name)
     
 
     def save(self, start_time, end_time):
@@ -136,7 +171,10 @@ class Segmenter():
         if mtype == Gst.MessageType.EOS:
             self.pipeline.set_state(Gst.State.NULL)
             self.mainloop.quit()
-                
+        elif message.type == Gst.MessageType.APPLICATION:
+            if message.get_structure().get_name() == "prelloled":
+                self.do_seek()
+                self.pipeline.set_state(Gst.State.PLAYING)
         elif mtype == Gst.MessageType.SEGMENT_DONE:
             try:
                 self.do_seek()
@@ -145,13 +183,6 @@ class Segmenter():
                 return
             self.encoder.set_state(Gst.State.NULL)
             self.encoder.set_state(Gst.State.PLAYING)
-        elif mtype == Gst.MessageType.STREAM_START:
-            if not self.current_segment:
-                try:
-                    self.do_seek()
-                except Empty:
-                    self.pipeline.set_state(Gst.State.NULL)
-                    self.mainloop.quit()
         elif mtype == Gst.MessageType.ERROR:
             err, debug = message.parse_error()
             print("Error: %s: %s\n" % (err, debug))
@@ -163,4 +194,6 @@ class Segmenter():
 # s.save(18.85, 21.450000000000003)
 # s.save(21.8, 28.750000000000004)
 # s.run('test_data/ggg.mp3', 'testoutput')
+# s.save(23.8, 28.750000000000004)
+# s.run('test_data/ggg.mp3', 'testoutput2')
 

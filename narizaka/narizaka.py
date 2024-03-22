@@ -9,7 +9,7 @@ from narizaka.aligner import Aligner
 from narizaka.audiobook import AudioBook
 from narizaka.transcriber import Transcriber
 from faster_whisper.utils import format_timestamp
-#from multiprocessing import Pool
+#from multiprocessing import Pool # Multiprocessing is faster, but reuquires much more memory
 from multiprocessing.dummy import Pool
 
 
