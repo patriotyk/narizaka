@@ -57,4 +57,7 @@ class TextBook:
                 text += self.norm(self._get_text(i)) + ' '
                 if len(text) >= self.min_text_length:
                     break
-        return text 
+        return text
+    
+    def __del__(self):
+        os.remove(self.path)

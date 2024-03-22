@@ -19,7 +19,7 @@ class FasterWhisperTranscriber():
 
 
     def transcribe(self, audio):
-        result = self.model.transcribe_stable(audio, language='uk', regroup=True,
+        result = self.model.transcribe_stable(audio, language='uk', regroup=True, verbose=None,
                                                       prepend_punctuations= "\"'“¿([{-«",
                                                       append_punctuations = "\"'.。,，!！?？:：”)]}、»", suppress_tokens=self.number_tokens)
         return result

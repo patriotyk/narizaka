@@ -24,11 +24,11 @@ stressify = Stressifier()
 bad_text = regex.compile('[0-9\p{L}--[а-яіїєґ]]', regex.VERSION1|regex.IGNORECASE)
 
 class Aligner():
-    def __init__(self, output: pathlib.Path, sr: int, columns: str) -> None:
-        self.output = output
-        self.sr = sr
+    def __init__(self, args) -> None:
+        self.output = args.o
+        self.sr = args.sr
         self.splitter = Splitter()
-        self.columns = columns.split(',')
+        self.columns = args.columns.split(',')
 
     def pases_filter(self, segment):
         if segment['end']-segment['start'] < 1.0 or segment['end']-segment['start'] > 35:

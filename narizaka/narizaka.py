@@ -9,7 +9,8 @@ from narizaka.aligner import Aligner
 from narizaka.audiobook import AudioBook
 from narizaka.transcriber import Transcriber
 from faster_whisper.utils import format_timestamp
-from multiprocessing import Pool
+#from multiprocessing import Pool
+from multiprocessing.dummy import Pool
 
 
 def print_result(recognized, total):
@@ -88,7 +89,6 @@ def run():
         
     found_books = find_books(args)
     if found_books:
-        aligner = Aligner(args.o, args.sr, args.columns)
         print(f"The following books have been found:")
         total_result = [0,0]
         for book in found_books:
@@ -106,7 +106,7 @@ def run():
                     for _, transcribed in transcribed['files'].items():
                         cache_files.append(transcribed['cache'])
                 else:
-                    result = pool.apply_async(aligner.run, (text_book_path, transcribed))
+                    result = pool.apply_async(Aligner(args).run, (text_book_path, transcribed))
                     results.append((result, transcribed['duration'], text_book_path))
             for result in results:
                 aligned = result[0].get()
