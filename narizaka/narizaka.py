@@ -76,6 +76,7 @@ def run():
     parser.add_argument('-o',  type=Path, help='Output directory', default=Path('./output/'))
     parser.add_argument('-device',  type=str, help='Device to run on', default='auto')
     parser.add_argument('-c', action='store_true',  help='Cache only mode', default=False)
+    parser.add_argument('-n',  type=int, help='Limit number of CPU workers', default=None)
     parser.add_argument('-sr',  type=int, help='Resample to', default=24000)
     parser.add_argument('-columns',  type=str, help=f'Columns to include, default values is "{columns}", this is all possible columns', default=columns)
 
@@ -100,7 +101,7 @@ def run():
 
         cache_files = []
         results = []
-        with Pool(processes=min(os.cpu_count(), len(found_books))) as pool:
+        with Pool(processes=args.n) as pool:
             for text_book_path, transcribed in transcriber.transcribe():
                 if args.c:
                     for _, transcribed in transcribed['files'].items():
