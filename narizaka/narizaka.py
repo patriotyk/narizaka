@@ -9,8 +9,7 @@ from narizaka.aligner import Aligner
 from narizaka.audiobook import AudioBook
 from narizaka.transcriber import Transcriber
 from faster_whisper.utils import format_timestamp
-#from multiprocessing import Pool # Multiprocessing is faster, but reuquires much more memory
-from multiprocessing.dummy import Pool
+from multiprocessing import Pool
 
 
 def print_result(recognized, total):
@@ -63,7 +62,6 @@ def find_books(args):
 
     return found_books
 
-audio_formats = ['flac', 'wav']
 columns = 'audio,speaker_id,ipa,sentence,duration'
 def run():
     parser = argparse.ArgumentParser(description = 'Utility to make audio dataset from  audio and text book')

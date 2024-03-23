@@ -114,29 +114,28 @@ class Segmenter():
             return
         pad.link(self.resample.get_static_pad('sink'))
 
-
-    def _reset(self):
-        self.index = 0
-        self.current_segment = f'segment_0.wav'
-        self.filesink.set_property("location", os.path.join(self.output_folder,self.current_segment))
-        self.prerolled = False
-        
     
     def run(self, location, output_folder):
-        self.pipeline.set_state(Gst.State.NULL)
-        self.output_folder = output_folder
-        os.makedirs(output_folder, exist_ok=True)
-        self.src.set_property("location", location)
-        self._reset()
-        self.pipeline.set_state(Gst.State.PAUSED)
+        if not self.splits.empty():
+            self.pipeline.set_state(Gst.State.NULL)
+            self.output_folder = output_folder
+            os.makedirs(output_folder, exist_ok=True)
+            self.src.set_property("location", location)
+            
+            self.current_segment = self.splits.get_nowait()
+            self.filesink.set_property("location", os.path.join(self.output_folder, self.construct_name(self.current_segment[2])))
+            self.prerolled = False
+            self.pipeline.set_state(Gst.State.PAUSED)
 
-        self.mainloop.run()
-        self._reset()
+            self.mainloop.run()
+            
 
-
+    def construct_name(self, index):
+        return f'segment_{index:06}.wav'
+    
     def save(self, start_time, end_time):
         self.splits.put_nowait((start_time, end_time, self.index))
-        file_path = f'segment_{self.index}.wav'
+        file_path = self.construct_name(self.index)
         self.index += 1
         return file_path
 
@@ -144,15 +143,14 @@ class Segmenter():
             event = info.get_event()
             if event.type == Gst.EventType.FLUSH_STOP:
                 self.filesink.set_state(Gst.State.NULL)
-                self.filesink.set_property("location", os.path.join(self.output_folder,self.current_segment))
+                self.filesink.set_property("location", os.path.join(self.output_folder, self.construct_name(self.current_segment[2])))
                 self.filesink.set_state(Gst.State.PLAYING)
+                
             return Gst.PadProbeReturn.OK
     
     def do_seek(self):
-        split = self.splits.get_nowait()
-        self.current_segment = f'segment_{split[2]}.wav'
         seek_flags = Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE |  Gst.SeekFlags.SEGMENT
-        res = self.pipeline.seek(1.0, Gst.Format.TIME, seek_flags, Gst.SeekType.SET, split[0] * Gst.SECOND, Gst.SeekType.SET, split[1] * Gst.SECOND)
+        res = self.pipeline.seek(1.0, Gst.Format.TIME, seek_flags, Gst.SeekType.SET, self.current_segment[0] * Gst.SECOND, Gst.SeekType.SET, self.current_segment[1] * Gst.SECOND)
         if not res:
             raise Exception('Can\'t seek')
  
@@ -165,22 +163,20 @@ class Segmenter():
             self.mainloop.quit()
         elif message.type == Gst.MessageType.APPLICATION:
             if message.get_structure().get_name() == "do_seek":
-                try:
-                    self.do_seek()
-                    self.prerolled = True
-                    self.pipeline.set_state(Gst.State.PLAYING)
-                except Empty:
-                    bus.post(Gst.Message.new_eos())
-                    return
+                self.do_seek()
+                self.prerolled = True
+                self.pipeline.set_state(Gst.State.PLAYING)
+
         elif mtype == Gst.MessageType.SEGMENT_DONE:
+
             try:
-                pad = self.resample.get_static_pad('sink')
+                self.current_segment = self.splits.get_nowait()
                 self.custom_message('do_seek')
+                self.encoder.set_state(Gst.State.NULL)
+                self.encoder.set_state(Gst.State.PLAYING)
             except Empty:
-                bus.post(Gst.Message.new_eos())
-                return
-            self.encoder.set_state(Gst.State.NULL)
-            self.encoder.set_state(Gst.State.PLAYING)
+                self.bus.post(Gst.Message.new_eos())
+
         elif mtype == Gst.MessageType.ERROR:
             err, debug = message.parse_error()
             print("Error: %s: %s\n" % (err, debug))
@@ -193,5 +189,5 @@ class Segmenter():
 # s.save(21.8, 28.750000000000004)
 # s.run('test_data/ggg.mp3', 'testoutput')
 # s.save(23.8, 28.750000000000004)
-# s.run('test_data/ggg.mp3', 'testoutput2')
+# s.run('test_data/ggg.mp3', 'testoutput')
 
