@@ -107,7 +107,7 @@ class Segmenter():
     def no_more_pads(self, el):
         if self.prerolled:
             return
-        self.custom_message('prelloled')
+        self.custom_message('do_seek')
 
     def custom_message(self, name):
         custom_structure = Gst.Structure.new_empty(name)
@@ -138,7 +138,7 @@ class Segmenter():
 
         self.mainloop.run()
         self._reset()
-        #self.splits = Queue()
+
     
 
     def save(self, start_time, end_time):
@@ -171,7 +171,7 @@ class Segmenter():
             self.pipeline.set_state(Gst.State.NULL)
             self.mainloop.quit()
         elif message.type == Gst.MessageType.APPLICATION:
-            if message.get_structure().get_name() == "prelloled":
+            if message.get_structure().get_name() == "do_seek":
                 try:
                     self.do_seek()
                     self.prerolled = True
@@ -181,10 +181,9 @@ class Segmenter():
                     return
         elif mtype == Gst.MessageType.SEGMENT_DONE:
             try:
-                self.prelloled = False
                 pad = self.resample.get_static_pad('sink')
-                pad.add_probe(Gst.PadProbeType.BLOCK_DOWNSTREAM, self.probe_blocked)
-                self.custom_message('prelloled')
+                #pad.add_probe(Gst.PadProbeType.BLOCK_DOWNSTREAM, self.probe_blocked)
+                self.custom_message('do_seek')
             except Empty:
                 bus.post(Gst.Message.new_eos())
                 return
