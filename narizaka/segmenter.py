@@ -90,11 +90,6 @@ class Segmenter():
 
         self.src.set_state(Gst.State.NULL)
 
-    
-    def probe_blocked(self, el, info):
-        if self.prerolled:
-            return Gst.PadProbeReturn.REMOVE
-        return Gst.PadProbeReturn.OK
 
     
     def on_pad_added(self, el, pad):
@@ -117,7 +112,6 @@ class Segmenter():
     def on_channel_added(self, el, pad):
         if self.prerolled:
             return
-        pad.add_probe(Gst.PadProbeType.BLOCK_DOWNSTREAM, self.probe_blocked)
         pad.link(self.resample.get_static_pad('sink'))
 
 
@@ -139,7 +133,6 @@ class Segmenter():
         self.mainloop.run()
         self._reset()
 
-    
 
     def save(self, start_time, end_time):
         self.splits.put_nowait((start_time, end_time, self.index))
@@ -182,7 +175,6 @@ class Segmenter():
         elif mtype == Gst.MessageType.SEGMENT_DONE:
             try:
                 pad = self.resample.get_static_pad('sink')
-                #pad.add_probe(Gst.PadProbeType.BLOCK_DOWNSTREAM, self.probe_blocked)
                 self.custom_message('do_seek')
             except Empty:
                 bus.post(Gst.Message.new_eos())
