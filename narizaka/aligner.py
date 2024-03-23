@@ -179,7 +179,7 @@ class Aligner():
                     filename = segmenter.save(start_time=start, end_time=end)
                     
                     segment['duration'] = segment['end'] - segment['start']
-                    segment['audio'] = os.path.join(audio_output, filename)
+                    segment['audio'] = os.path.join(elf.book.name, filename)
                     segment['ipa'] = ipa(stressify(match["sentence"]), False)
                     segment['speaker_id'] = transcribed['speaker_id']
 
