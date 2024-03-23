@@ -11,14 +11,15 @@ class TextBook:
         super().__init__()
         self.name = path.stem
         self.min_text_length = min_text_length
+        self.temp_file = None
         
         if self._is_fb2(path):
             self.path = path
         else:
-            fl, fb2_file = tempfile.mkstemp(suffix='.fb2')
+            fl, self.temp_file = tempfile.mkstemp(suffix='.fb2')
             os.close(fl)
-            os.system(f'pandoc "{path}" -o {fb2_file}')
-            self.path = fb2_file
+            os.system(f'pandoc "{path}" -o {self.temp_file}')
+            self.path = self.temp_file
         self.iter = ET.parse(self.path).getroot().iter()
 
     
@@ -60,4 +61,5 @@ class TextBook:
         return text
     
     def __del__(self):
-        os.remove(self.path)
+        if self.temp_file:
+            os.remove(self.temp_file)

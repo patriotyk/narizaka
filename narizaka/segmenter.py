@@ -107,7 +107,6 @@ class Segmenter():
     def no_more_pads(self, el):
         if self.prerolled:
             return
-        self.prerolled = True
         self.custom_message('prelloled')
 
     def custom_message(self, name):
@@ -175,13 +174,17 @@ class Segmenter():
             if message.get_structure().get_name() == "prelloled":
                 try:
                     self.do_seek()
+                    self.prerolled = True
                     self.pipeline.set_state(Gst.State.PLAYING)
                 except Empty:
                     bus.post(Gst.Message.new_eos())
                     return
         elif mtype == Gst.MessageType.SEGMENT_DONE:
             try:
-                self.do_seek()
+                self.prelloled = False
+                pad = self.resample.get_static_pad('sink')
+                pad.add_probe(Gst.PadProbeType.BLOCK_DOWNSTREAM, self.probe_blocked)
+                self.custom_message('prelloled')
             except Empty:
                 bus.post(Gst.Message.new_eos())
                 return
