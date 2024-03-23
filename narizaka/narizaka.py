@@ -107,6 +107,8 @@ def run():
                 else:
                     result = pool.apply_async(Aligner(args).run, (text_book_path, transcribed))
                     results.append((result, transcribed['duration'], text_book_path))
+            pool.close()
+            pool.join()
             for result in results:
                 aligned = result[0].get()
                 print(f'Result for book {result[2]}:')
