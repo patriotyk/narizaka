@@ -116,7 +116,7 @@ class Aligner():
 
     def segments(self, transcribed):
         for orig_file, transcribed_files in transcribed.items():
-            print(f"Using transcribed file from file: {transcribed_files['cache']}")
+            print(f"Using transcribed audio from cache file: {transcribed_files['cache']}")
             data = json.load(open(transcribed_files['cache'], 'r'))
             words = []
             for w in data:
@@ -130,6 +130,7 @@ class Aligner():
             yield {
                 'segments': segments,
                 'orig_name': orig_file,
+                'converted_audio': file_16 if not transcribed_files['audio_16'] else None
             }
 
 
@@ -189,6 +190,8 @@ class Aligner():
                 else:
                     pass
                     #print(f'NOT MATCHED: {match["book_text"]}')
+            if segments['converted_audio']:
+                os.remove(segments['converted_audio'])
             segmenter.run(str(orig_name), output_folder=audio_output)
         dfp.close()
         return self.recognised_duration
