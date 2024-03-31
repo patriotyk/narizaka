@@ -89,7 +89,6 @@ def number_form(number):
         return 2
 
 def replace_cases(number, dash, case='', next_word=''):
-    print(f'{number}, {dash}, {case}, {next_word}')
     gender = 'masculine'
     m_case = 'nominative'
     to = 'ordinal'
@@ -157,7 +156,8 @@ def replace_cases(number, dash, case='', next_word=''):
                 to = 'cardinal'
                 repl = case
             else:
-                print(f'UNKNOWN CASE {number}-{case}')
+                #print(f'UNKNOWN CASE {number}-{case}')
+                pass
 
     return_str = num2words(number, to=to, lang='uk', case=m_case, gender=gender)
     if repl:

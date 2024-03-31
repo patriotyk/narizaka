@@ -2,6 +2,8 @@ faster-whisper
 transformers
 ffmpeg
 ffmpeg-python
+pycairo
+PyGObject
 regex
 fuzzysearch
 python-magic

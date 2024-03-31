@@ -7,18 +7,19 @@ import pathlib
 import xml.etree.ElementTree as ET
 
 class TextBook:
-    def __init__(self, path, min_text_length=10000) -> None:
+    def __init__(self, path, min_text_length=40000) -> None:
         super().__init__()
         self.name = path.stem
         self.min_text_length = min_text_length
+        self.temp_file = None
         
         if self._is_fb2(path):
             self.path = path
         else:
-            fl, fb2_file = tempfile.mkstemp(suffix='.fb2')
+            fl, self.temp_file = tempfile.mkstemp(suffix='.fb2')
             os.close(fl)
-            os.system(f'pandoc "{path}" -o {fb2_file}')
-            self.path = fb2_file
+            os.system(f'pandoc "{path}" -o {self.temp_file}')
+            self.path = self.temp_file
         self.iter = ET.parse(self.path).getroot().iter()
 
     
@@ -57,4 +58,8 @@ class TextBook:
                 text += self.norm(self._get_text(i)) + ' '
                 if len(text) >= self.min_text_length:
                     break
-        return text 
+        return text
+    
+    def __del__(self):
+        if self.temp_file:
+            os.remove(self.temp_file)

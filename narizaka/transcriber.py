@@ -29,8 +29,9 @@ class BackendWorker(Process):
             while book_files := self.book_files_queue.get(timeout=10):
                 sr = 16000
                 filename_16, _ = convert_media(book_files[1], format='wav', sr=sr)
-                print(f'Transcribing {book_files[1]}')
+                print(f'Transcribing {book_files[1]} on device {self.device_index}')
                 self._transcribe_one(filename_16, book_files[2])
+                print(f'Transcribed {book_files[1]} on device {self.device_index}')
                 self.transcribed.put_nowait({'text_book_filename': book_files[0], 
                                             'audio_16': filename_16, 
                                             'audio_file': book_files[1], 

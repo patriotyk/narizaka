@@ -9,6 +9,7 @@ from narizaka.aligner import Aligner
 from narizaka.audiobook import AudioBook
 from narizaka.transcriber import Transcriber
 from faster_whisper.utils import format_timestamp
+from multiprocessing import Pool
 
 
 def print_result(recognized, total):
@@ -61,7 +62,6 @@ def find_books(args):
 
     return found_books
 
-audio_formats = ['flac', 'wav']
 columns = 'audio,speaker_id,ipa,sentence,duration'
 def run():
     parser = argparse.ArgumentParser(description = 'Utility to make audio dataset from  audio and text book')
@@ -74,8 +74,8 @@ def run():
     parser.add_argument('-o',  type=Path, help='Output directory', default=Path('./output/'))
     parser.add_argument('-device',  type=str, help='Device to run on', default='auto')
     parser.add_argument('-c', action='store_true',  help='Cache only mode', default=False)
-    parser.add_argument('-sr',  type=int, help='Resample to', default=0)
-    parser.add_argument('-audio_format',  type=str, help=f'Output audio format, supported values is: {", ".join(audio_formats)}', default='flac')
+    parser.add_argument('-n',  type=int, help='Limit number of CPU workers', default=None)
+    parser.add_argument('-sr',  type=int, help='Resample to', default=24000)
     parser.add_argument('-columns',  type=str, help=f'Columns to include, default values is "{columns}", this is all possible columns', default=columns)
 
 
@@ -84,14 +84,10 @@ def run():
     if not args.data.is_dir():
         print("-data argument should point to the directory")
         sys.exit(-1)
-    if args.audio_format not in audio_formats:
-        print(f"-audio_format {args.audio_format} is not supported.")
-        sys.exit(-1)
 
         
     found_books = find_books(args)
     if found_books:
-        aligner = Aligner(args.o, args.sr, args.columns, args.audio_format)
         print(f"The following books have been found:")
         total_result = [0,0]
         for book in found_books:
@@ -102,20 +98,25 @@ def run():
             transcriber.add(book[1],  book[0])
 
         cache_files = []
-        for text_book_path, transcribed in transcriber.transcribe():
-                
-            #try:
+        results = []
+        with Pool(processes=args.n) as pool:
+            for text_book_path, transcribed in transcriber.transcribe():
                 if args.c:
                     for _, transcribed in transcribed['files'].items():
                         cache_files.append(transcribed['cache'])
                 else:
-                    result = aligner.run(text_book_path, transcribed)
-                    print(f'Result for book {text_book_path}:')
-                    print_result(result, transcribed['duration'])
-                    total_result[0] += result
-                    total_result[1] += transcribed['duration']
-            # except Exception as ex:
-            #     print(f'Exception with book {book[1]}:\n {str(ex)}')
+                    result = pool.apply_async(Aligner(args).run, (text_book_path, transcribed))
+                    results.append((result, transcribed['duration'], text_book_path))
+            pool.close()
+            pool.join()
+            for result in results:
+                aligned = result[0].get()
+                print(f'Result for book {result[2]}:')
+                aligned = result[0].get()
+                print_result(aligned, result[1])
+                total_result[0] += aligned
+                total_result[1] += result[1]
+
 
         if args.c:
             if not args.o.exists():
