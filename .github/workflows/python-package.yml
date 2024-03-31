@@ -27,7 +27,7 @@ jobs:
     - name: Install package
       run: |
         sudo apt-get update
-        sudo apt-get install -y ffmpeg
+        sudo apt-get install -y ffmpeg libmagic-dev libcairo2-dev libgirepository1.0-dev python3-gst-1.0
         python -m pip install --upgrade pip
         python -m pip install flake8 pytest
         pip install .
