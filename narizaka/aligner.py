@@ -107,7 +107,7 @@ class Aligner():
             match['end'] = matched.end
             match['distance'] = matched.dist
             match['matched'] = True
-            if num_words > 2 or matched.start < 10:
+            if num_words > 4 or matched.start < 20:
                 self.current_pos += matched.end
         else:
             book_text = self.current_norm_text()[:200 ] + "..."
