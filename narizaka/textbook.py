@@ -53,11 +53,16 @@ class TextBook:
     
     def more_text(self):
         text = ''
+        skip = False
         for i in self.iter:
-            if i.tag.endswith('}p'):
+            if i.tag.endswith('}p') and not skip:
                 text += self.norm(self._get_text(i)) + ' '
                 if len(text) >= self.min_text_length:
                     break
+            elif i.tag.endswith('}empty-line'):
+                skip = True
+            elif i.tag.endswith('}p') and skip and i.text == None:
+                skip = False
         return text
     
     def __del__(self):
