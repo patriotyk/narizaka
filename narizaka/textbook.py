@@ -7,11 +7,14 @@ import pathlib
 import xml.etree.ElementTree as ET
 
 class TextBook:
-    def __init__(self, path, min_text_length=10000) -> None:
+    def __init__(self, path, min_text_length=20000) -> None:
         super().__init__()
         self.name = path.stem
         self.min_text_length = min_text_length
         self.temp_file = None
+        self.can_skip = False
+        if magic.from_file(filename=path, mime=True) == 'application/epub+zip':
+            self.can_skip = True
         
         if self._is_fb2(path):
             self.path = path
@@ -20,7 +23,7 @@ class TextBook:
             os.close(fl)
             os.system(f'pandoc "{path}" -o {self.temp_file}')
             self.path = self.temp_file
-        self.iter = ET.parse(self.path).getroot().iter()
+        self.iter = ET.parse(self.path).getroot().find('{http://www.gribuser.ru/xml/fictionbook/2.0}body').iter()
 
     
     def _is_fb2(self, filename: pathlib.Path)-> bool:
@@ -59,9 +62,9 @@ class TextBook:
                 text += self.norm(self._get_text(i)) + ' '
                 if len(text) >= self.min_text_length:
                     break
-            elif i.tag.endswith('}empty-line'):
+            elif i.tag.endswith('}empty-line') and self.can_skip:
                 skip = True
-            elif i.tag.endswith('}p') and skip and i.text == None:
+            elif i.tag.endswith('}p') and skip and i.text == None and i.tail == None and not "".join(i.itertext()):
                 skip = False
         return text
     

@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import gi 
-import tempfile
 import os
 import time
 from queue import Queue, Empty

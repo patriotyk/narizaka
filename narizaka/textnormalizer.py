@@ -158,8 +158,11 @@ def replace_cases(number, dash, case='', next_word=''):
             else:
                 #print(f'UNKNOWN CASE {number}-{case}')
                 pass
-
-    return_str = num2words(number, to=to, lang='uk', case=m_case, gender=gender)
+    return_str = ''
+    try:
+        return_str = num2words(number, to=to, lang='uk', case=m_case, gender=gender)
+    except:
+        print(f'Exception in numebr conversion: {number}, {to}, {m_case}, {gender}')
     if repl:
         return_str +=  ' ' + repl
     if not next_word or (next_word and  next_word.strip().isupper()):

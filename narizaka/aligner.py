@@ -81,7 +81,7 @@ class Aligner():
         return ' '.join(denorm_words_list)
             
     def current_norm_text(self):
-        if len(self.norm_text) < self.current_pos + 3000:
+        if len(self.norm_text) < self.current_pos + 20000:
             text = self.book.more_text()
             self._feed(text)
         return self.norm_text[self.current_pos:]

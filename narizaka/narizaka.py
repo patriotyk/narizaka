@@ -110,7 +110,6 @@ def run():
             pool.close()
             pool.join()
             for result in results:
-                aligned = result[0].get()
                 print(f'Result for book {result[2]}:')
                 aligned = result[0].get()
                 print_result(aligned, result[1])
