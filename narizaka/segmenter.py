@@ -13,10 +13,78 @@ logger = logging.getLogger(__name__)
 Gst.init(None)
 
 
+class MediaInfo():
+    def __init__(self):
+        self.pipeline = Gst.Pipeline()
+        self.src = Gst.ElementFactory.make("filesrc")
+        self.pipeline.add(self.src)
+        self.decbin = Gst.ElementFactory.make("decodebin")
+        self.pipeline.add(self.decbin)
+        self.conv = Gst.ElementFactory.make("audioconvert")
+        self.pipeline.add(self.conv)
+        self.res = Gst.ElementFactory.make("audioresample")
+        self.pipeline.add(self.res)
+        self.rg = Gst.ElementFactory.make("rganalysis")
+        self.pipeline.add(self.rg)
+        self.sink = Gst.ElementFactory.make("fakesink")
+        self.pipeline.add(self.sink)
+
+        self.src.link(self.decbin)
+        self.conv.link(self.res)
+        self.res.link(self.rg)
+        self.rg.link(self.sink)
+        self.decbin.connect("pad-added", self._on_pad_added)
+        self.decbin.connect("pad-removed", self._on_pad_removed)
+
+        self.rg.set_property("forced", True)
+        #self.rg.set_property("reference-level", self.ref_lvl)
+
+        bus = self.pipeline.get_bus()
+        bus.add_signal_watch()
+        bus.connect("message", self._on_message)
+
+    def _on_pad_added(self, decbin, new_pad):
+        sinkpad = self.conv.get_compatible_pad(new_pad, None)
+        if sinkpad is not None:
+            new_pad.link(sinkpad)
+
+    def _on_pad_removed(self, decbin, old_pad):
+        peer = old_pad.get_peer()
+        if peer is not None:
+            old_pad.unlink(peer)
+
+    def _on_message(self, bus, msg):
+        if msg.type == Gst.MessageType.TAG:
+            tags = msg.parse_tag()
+            self.tl = Gst.TagList.new_empty()
+            def handle_tag(taglist, tag, userdata):
+                if tag == Gst.TAG_TRACK_GAIN:
+                    self.tl.add_value(Gst.TagMergeMode.APPEND, Gst.TAG_TRACK_GAIN,
+                                      taglist.get_double(tag)[1])
+                elif tag == Gst.TAG_TRACK_PEAK:
+                   self.tl.add_value(Gst.TagMergeMode.APPEND, Gst.TAG_TRACK_PEAK,
+                                     taglist.get_double(tag)[1])
+                elif tag == Gst.TAG_REFERENCE_LEVEL:
+                    self.tl.add_value(Gst.TagMergeMode.APPEND, Gst.TAG_REFERENCE_LEVEL,
+                                      taglist.get_double(tag)[1])
+            tags.foreach(handle_tag, None)
+        elif msg.type == Gst.MessageType.EOS:
+            self.pipeline.set_state(Gst.State.NULL)
+            self.mainloop.quit()
+
+    def get(self, fname):
+        self.src.set_property("location", fname)
+        self.pipeline.set_state(Gst.State.PLAYING)
+        self.mainloop = GLib.MainLoop()
+        self.mainloop.run()
+        return self.tl
+
+
 class Segmenter():
     def __init__(self, sr):
 
         self.sr = sr
+        self.info = MediaInfo()
 
         self.splits = Queue()
         self.current_segment = None
@@ -116,6 +184,7 @@ class Segmenter():
     
     def run(self, location, output_folder):
         if not self.splits.empty():
+            self.rp_event = Gst.Event.new_tag(self.info.get(location))
             self.pipeline.set_state(Gst.State.NULL)
             self.output_folder = output_folder
             os.makedirs(output_folder, exist_ok=True)
@@ -175,6 +244,8 @@ class Segmenter():
                 self.encoder.set_state(Gst.State.PLAYING)
             except Empty:
                 self.bus.post(Gst.Message.new_eos())
+        elif mtype == Gst.MessageType.STREAM_START:
+            self.resample.get_static_pad('src').push_event(self.rp_event)
 
         elif mtype == Gst.MessageType.ERROR:
             err, debug = message.parse_error()
