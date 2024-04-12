@@ -62,7 +62,7 @@ def find_books(args):
 
     return found_books
 
-columns = 'audio,speaker_id,ipa,sentence,duration'
+columns = 'audio,speaker_id,sentence,duration'
 def run():
     parser = argparse.ArgumentParser(description = 'Utility to make audio dataset from  audio and text book')
 

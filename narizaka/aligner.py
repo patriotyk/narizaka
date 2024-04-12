@@ -16,9 +16,6 @@ from narizaka.segmenter import Segmenter
 import torchaudio
 from torchaudio.functional import resample
 from stable_whisper.result import WordTiming
-from ukrainian_word_stress import Stressifier
-from ipa_uk import ipa
-stressify = Stressifier()
 
 
 bad_text = regex.compile('[0-9\p{L}--[а-яіїєґ]]', regex.VERSION1|regex.IGNORECASE)
@@ -184,7 +181,6 @@ class Aligner():
                     
                     segment['duration'] = segment['end'] - segment['start']
                     segment['audio'] = os.path.join(self.book.name, filename)
-                    segment['ipa'] = ipa(stressify(match["sentence"]), False)
                     segment['speaker_id'] = transcribed['speaker_id']
 
                     ds.writerow(segment)
