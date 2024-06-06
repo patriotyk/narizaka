@@ -111,37 +111,17 @@ class Aligner():
             match['book_text'] = book_text
         return match
 
-    def segments(self, transcribed):
-        for orig_file, transcribed_files in transcribed.items():
-            print(f"Aligning: {orig_file}")
-            data = json.load(open(transcribed_files['cache'], 'r'))
-            words = []
-            for w in data:
-                words.append(WordTiming(**w))
 
-            if transcribed_files['audio_16']:
-                file_16 = transcribed_files['audio_16']
-            else:
-                file_16, _ = utils.convert_media(orig_file, format='wav', sr=16000)
-            segments = self.splitter.split_to_segments(file_16, words)
-            yield {
-                'cache_filename': transcribed_files['cache'],
-                'segments': segments,
-                'orig_name': orig_file,
-                'converted_audio': file_16 if not transcribed_files['audio_16'] else None
-            }
-
-
-    def run(self, book: pathlib.Path, transcribed):
+    def run(self, pair):
         self.normpos = []
         self.denorm = []
         self.norm_text = ''
         self.current_pos = 0
-        self.book = TextBook(book)
+        self.book = TextBook(pair.text_book_path)
 
         self.recognised_duration = 0.0
 
-        audio_output = self.output / self.book.name
+        audio_output = self.output / pair.text_book_path
         if not audio_output.exists():
             os.makedirs(audio_output, exist_ok=True)
     
@@ -159,11 +139,11 @@ class Aligner():
         )
 
         segmenter = Segmenter(sr=self.sr)
-        for segments in self.segments(transcribed['files']):
-            log_file.write(f'Starting audiofile: {segments["orig_name"]}\n')
-            log_file.write(f'Transcribed: {segments["cache_filename"]}\n')
-            orig_name = segments['orig_name']
-            for segment in segments['segments']:
+        for audio_file, words in pair.audio_book.transcription():
+            log_file.write(f'Starting audiofile: {audio_file}\n')
+            file_16, _ = utils.convert_media(audio_file, format='wav', sr=16000)
+            segments = self.splitter.split_to_segments(file_16, words)
+            for segment in segments:
                 if not segment:
                     continue
                 log_file.write(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}\n')
@@ -181,16 +161,15 @@ class Aligner():
                     
                     segment['duration'] = segment['end'] - segment['start']
                     segment['audio'] = os.path.join(self.book.name, filename)
-                    segment['speaker_id'] = transcribed['speaker_id']
+                    segment['speaker_id'] = pair.audio_book.speaker_id or '0'
 
                     ds.writerow(segment)
                     self.recognised_duration += segment['duration']
 
                 else:
                     log_file.write(f'NOT MATCHED: {match["book_text"]}\n')
-            if segments['converted_audio']:
-                os.remove(segments['converted_audio'])
-            segmenter.run(str(orig_name), output_folder=audio_output)
+            os.remove(file_16)
+            segmenter.run(str(audio_file), output_folder=audio_output)
         dfp.close()
         log_file.close()
         return self.recognised_duration

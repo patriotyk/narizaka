@@ -9,6 +9,7 @@ import xml.etree.ElementTree as ET
 class TextBook:
     def __init__(self, path, min_text_length=20000) -> None:
         super().__init__()
+        self.filename = path
         self.name = path.stem
         self.min_text_length = min_text_length
         self.temp_file = None

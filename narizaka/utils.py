@@ -2,6 +2,14 @@ import os
 import ffmpeg
 import tempfile
 from retry import retry
+from narizaka.audiobook import AudioBook
+
+
+class AudioTextPair():
+    def __init__(self, audio_book:AudioBook, text_book_path:str):
+        self.audio_book = audio_book
+        self.text_book_path = text_book_path
+    
 
 @retry(tries=3, delay=1)
 def convert_media(filename, format='flac', sr=None):
