@@ -77,3 +77,6 @@ class AudioBook():
                 raise Exception(f'{val["filename"]} is not transcribed')
             yield val['filename'], json.load(open(cache_file, 'r'))
 
+    def get_cache_files(self):
+        for hash in self.files.keys():
+            yield self.cache_path / pathlib.Path(hash+'.json')

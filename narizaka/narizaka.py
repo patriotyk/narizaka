@@ -2,7 +2,6 @@
 import argparse
 import sys
 import os
-import magic
 import zipfile
 from pathlib import Path
 from narizaka.aligner import Aligner
@@ -71,8 +70,9 @@ def run():
                 os.makedirs(args.o, exist_ok=True)
             archive_path = args.o/(args.data.name +'.zip')
             with zipfile.ZipFile(archive_path , mode="w") as archive:
-                for t in cache_files:
-                    archive.write(t, arcname='narizaka/' + t.name)
+                for p in input_data.get_all_pairs():
+                    for cache_file_path in p.audio_book.get_cache_files():
+                        archive.write(cache_file_path, arcname=f'narizaka/'+ cache_file_path.name)
             print(f'\nCache archive have been saved to {archive_path}')
 
         # if len(found_books) > 1 and not args.c:
