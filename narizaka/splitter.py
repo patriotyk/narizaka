@@ -28,11 +28,11 @@ class Splitter():
         pugaps = []
         text = ''
         for i, word in enumerate(all_words[:-1]):
-            text += word.word
-            if word.word[-1] in [',','.','?','-',':','!', '»', ';'] or \
-              ((all_words[i+1].start - word.end) > 0.2 and (all_words[i+1].end - all_words[i+1].start) > 0.4 and
-              (word.end - word.start) > 0.4):
-                pugaps.append([word.end, all_words[i+1].start, i])
+            text += word['word']
+            if word['word'][-1] in [',','.','?','-',':','!', '»', ';'] or \
+              ((all_words[i+1]['start'] - word['end']) > 0.2 and (all_words[i+1]['end'] - all_words[i+1]['start']) > 0.4 and
+              (word['end'] - word['start']) > 0.4):
+                pugaps.append([word['end'], all_words[i+1]['start'], i])
                 text = ''
         
         
@@ -54,7 +54,7 @@ class Splitter():
             
             if found:
                 if start_word != found[2]+1:
-                    text = ''.join([word.word for word in all_words[start_word:found[2]+1]])
+                    text = ''.join([word['word'] for word in all_words[start_word:found[2]+1]])
                     if text.strip():
                         regions_by_punct.append({'start': temp_reg.meta.start,
                                                 'end': r.meta.end,

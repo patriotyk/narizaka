@@ -76,7 +76,6 @@ ordinal_instrumental_feminine_case = ('ю')
 
 numcases_r = regex.compile(rf'((?:^|\s)(\d+)\s*(\-?)(([^\d,]*?)|(\-\.+))(?:\.|,|:|-)?)(\s+[^,.:\-]|$)', regex.IGNORECASE, regex.UNICODE)
 
-print(numcases_r)
 cardinal_genitive_endings = ('а', 'e', 'є', 'й')
 ordinal_genitive_cases = ('року',)
 

@@ -2,65 +2,10 @@
 import argparse
 import sys
 import os
-import magic
 import zipfile
 from pathlib import Path
-from narizaka.aligner import Aligner
-from narizaka.audiobook import AudioBook
-from narizaka.transcriber import Transcriber
-from faster_whisper.utils import format_timestamp
-from multiprocessing import Pool
+from narizaka.data import InputData
 
-
-def print_result(recognized, total):
-    print(f'Extracted {recognized/3600:.3f} hours from audio duration of {total/3600:.3f}')
-    print(f'It is {(recognized/total)*100:.1f}% of total audio')
-
-def find_books(args):
-    supported_mimes =[
-        'application/epub+zip',
-        'text/xml',
-        'text/plain',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    ]
-    found_book = None
-    if args.t:
-        mimetype = magic.from_file(filename=args.t, mime=True)
-        if mimetype in supported_mimes:
-            found_book = args.t
-        else:
-            print('Text file is not suported.\n suported formats are:', supported_mimes)
-            sys.exit(-1)
-    else:
-        for item in args.data.iterdir():
-            if not item.is_dir():
-                mimetype = magic.from_file(filename=item, mime=True)
-                if mimetype in supported_mimes:
-                    found_book = item
-                    break
-    if found_book:
-        return [(AudioBook(args.data), item)]
-    
-    print('Root directory doesn\'t contain any text files, checking subdirectories...\n' )
-    found_books = []
-    def find_one_book(book_dir):
-        for book_item in book_dir.iterdir():
-                if not book_item.is_dir():
-                    mimetype = magic.from_file(filename=book_item, mime=True)
-                    if mimetype in supported_mimes:
-                        return book_item
-        return None
-    for speaker_id, book_or_group in enumerate(args.data.iterdir()):
-        if book_or_group.is_dir():
-            if found_book:=find_one_book(book_or_group):
-                found_books.append((AudioBook(book_or_group, speaker_id=speaker_id), found_book))
-            else:
-                for group_item in book_or_group.iterdir():
-                    if group_item.is_dir():
-                        if found:=find_one_book(group_item):
-                            found_books.append((AudioBook(group_item, speaker_id=speaker_id), found))
-
-    return found_books
 
 columns = 'audio,speaker_id,sentence,duration'
 def run():
@@ -86,49 +31,30 @@ def run():
         sys.exit(-1)
 
         
-    found_books = find_books(args)
-    if found_books:
+    input_data = InputData(args)
+    if not input_data.is_empty():
         print(f"The following books have been found:")
-        total_result = [0,0]
-        for book in found_books:
-            print(book[0].speaker_id, book[1])
+        
+        if len(input_data.transcribed_books):
+            print('\nFully transcribed:')
+            for book_pair in input_data.transcribed_books:
+                print(book_pair.audio_book.speaker_id, book_pair.text_book_path)
+        if len(input_data.needs_transcribe_books):
+            print('\nPartially or not transcribed:')
+            for book_pair in input_data.needs_transcribe_books:
+                print(book_pair.audio_book.speaker_id, book_pair.text_book_path)
 
-        transcriber = Transcriber(device=args.device)
-        for book in found_books:
-            transcriber.add(book[1],  book[0])
-
-        cache_files = []
-        results = []
-        with Pool(processes=args.n) as pool:
-            for text_book_path, transcribed in transcriber.transcribe():
-                if args.c:
-                    for _, transcribed in transcribed['files'].items():
-                        cache_files.append(transcribed['cache'])
-                else:
-                    result = pool.apply_async(Aligner(args).run, (text_book_path, transcribed))
-                    results.append((result, transcribed['duration'], text_book_path))
-            pool.close()
-            pool.join()
-            for result in results:
-                print(f'Result for book {result[2]}:')
-                aligned = result[0].get()
-                print_result(aligned, result[1])
-                total_result[0] += aligned
-                total_result[1] += result[1]
-
+        input_data.process()
 
         if args.c:
             if not args.o.exists():
                 os.makedirs(args.o, exist_ok=True)
             archive_path = args.o/(args.data.name +'.zip')
             with zipfile.ZipFile(archive_path , mode="w") as archive:
-                for t in cache_files:
-                    archive.write(t, arcname='narizaka/' + t.name)
+                for p in input_data.get_all_pairs():
+                    for cache_file_path in p.audio_book.get_cache_files():
+                        archive.write(cache_file_path, arcname=f'narizaka/'+ cache_file_path.name)
             print(f'\nCache archive have been saved to {archive_path}')
-
-        if len(found_books) > 1 and not args.c:
-            print('\nTotal statistic:')
-            print_result(total_result[0], total_result[1])
     else:
         print('Have not found any data to process.')
 
