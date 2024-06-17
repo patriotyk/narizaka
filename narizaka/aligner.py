@@ -121,7 +121,7 @@ class Aligner():
 
         self.recognised_duration = 0.0
 
-        audio_output = self.output / pair.text_book_path
+        audio_output = self.output / self.book.name
         if not audio_output.exists():
             os.makedirs(audio_output, exist_ok=True)
     

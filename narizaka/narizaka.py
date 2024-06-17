@@ -57,14 +57,6 @@ def run():
 
         results = input_data.process()
 
-        for result in results:
-            print(f'Result for book {result[2]}:')
-            aligned = result[0].get()
-            print_result(aligned, result[1])
-            total_result[0] += aligned
-            total_result[1] += result[1]
-
-
         if args.c:
             if not args.o.exists():
                 os.makedirs(args.o, exist_ok=True)
@@ -74,10 +66,16 @@ def run():
                     for cache_file_path in p.audio_book.get_cache_files():
                         archive.write(cache_file_path, arcname=f'narizaka/'+ cache_file_path.name)
             print(f'\nCache archive have been saved to {archive_path}')
+        else:
+            for result in results:
+                print(f'Result for book {result[2]}:')
+                aligned = result[0].get()
+                print_result(aligned, result[1])
+                total_result[0] += aligned
+                total_result[1] += result[1]
 
-        # if len(found_books) > 1 and not args.c:
-        #     print('\nTotal statistic:')
-        #     print_result(total_result[0], total_result[1])
+            print('\nTotal statistic:')
+            print_result(total_result[0], total_result[1])
     else:
         print('Have not found any data to process.')
 
