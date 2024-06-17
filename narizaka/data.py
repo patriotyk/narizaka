@@ -1,7 +1,7 @@
 import magic
 import sys
 from tqdm import tqdm
-from multiprocessing import Pool
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from narizaka.audiobook import AudioBook
 from narizaka.transcriber import Transcriber
 from narizaka.aligner import Aligner
@@ -80,20 +80,31 @@ class InputData():
         return not len(self.transcribed_books) and not len(self.needs_transcribe_books)
 
     def process(self):
-        results = []
-        with Pool(processes=self.args.n) as pool:
-            for pair in self.transcribed_books:
-                result = pool.apply_async(Aligner(self.args).run, (pair,))
-                results.append((result, pair.audio_book.duration, pair.text_book_path))
+        futures = []
+        total_result = [0,0]
+        with ProcessPoolExecutor(max_workers=self.args.n) as pool:
+            if not self.args.c:
+                for pair in self.transcribed_books:
+                    future = pool.submit(Aligner(self.args).run, pair)
+                    futures.append(future)
             if self.needs_transcribe_books:
                 transcriber = self._get_transcriber()
-                for pair in transcriber.transcribe():
+                for pair in tqdm(transcriber.transcribe(), total=len(self.needs_transcribe_books), desc='Transcribing'):
                     if not self.args.c:
-                        result = pool.apply_async(Aligner(self.args).run, (pair,))
-                        results.append((result, pair.audio_book.duration, pair.text_book_path))
-            pool.close()
-            pool.join()
-            return results
+                        futures = pool.submit(Aligner(self.args).run, pair)
+                        future.append(future)
+            if futures:
+                progress = tqdm(total=len(futures), desc='Aligning and cropping')
+                for future in as_completed(futures):
+                    recognized, total, name = future.result()
+                    total_result[0] += recognized
+                    total_result[1] += total
+                    progress.write(f'Result for book {name}:')
+                    progress.write(f'Extracted {recognized/3600:.3f} hours from audio duration of {total/3600:.3f}')
+                    progress.write(f'It is {(recognized/total)*100:.1f}% of total audio\n')
+                    progress.update(1)
+                progress.close()
 
-        
-
+                print('\nTotal statistic:')
+                print(f'Extracted {total_result[0]/3600:.3f} hours from audio duration of {total_result[1]/3600:.3f}')
+                print(f'It is {(total_result[0]/total_result[1])*100:.1f}% of total audio\n')

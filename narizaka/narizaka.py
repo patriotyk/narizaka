@@ -4,17 +4,7 @@ import sys
 import os
 import zipfile
 from pathlib import Path
-from narizaka.aligner import Aligner
-from narizaka.audiobook import AudioBook
-from narizaka.transcriber import Transcriber
-from faster_whisper.utils import format_timestamp
-
 from narizaka.data import InputData
-
-
-def print_result(recognized, total):
-    print(f'Extracted {recognized/3600:.3f} hours from audio duration of {total/3600:.3f}')
-    print(f'It is {(recognized/total)*100:.1f}% of total audio')
 
 
 columns = 'audio,speaker_id,sentence,duration'
@@ -44,7 +34,6 @@ def run():
     input_data = InputData(args)
     if not input_data.is_empty():
         print(f"The following books have been found:")
-        total_result = [0,0]
         
         if len(input_data.transcribed_books):
             print('\nFully transcribed:')
@@ -55,7 +44,7 @@ def run():
             for book_pair in input_data.needs_transcribe_books:
                 print(book_pair.audio_book.speaker_id, book_pair.text_book_path)
 
-        results = input_data.process()
+        input_data.process()
 
         if args.c:
             if not args.o.exists():
@@ -66,16 +55,6 @@ def run():
                     for cache_file_path in p.audio_book.get_cache_files():
                         archive.write(cache_file_path, arcname=f'narizaka/'+ cache_file_path.name)
             print(f'\nCache archive have been saved to {archive_path}')
-        else:
-            for result in results:
-                print(f'Result for book {result[2]}:')
-                aligned = result[0].get()
-                print_result(aligned, result[1])
-                total_result[0] += aligned
-                total_result[1] += result[1]
-
-            print('\nTotal statistic:')
-            print_result(total_result[0], total_result[1])
     else:
         print('Have not found any data to process.')
 

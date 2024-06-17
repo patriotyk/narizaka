@@ -25,9 +25,7 @@ class BackendWorker(Process):
         self.backend = FasterWhisperTranscriber(self.device, self.device_index)
         try:
             while book_files := self.book_files_queue.get(timeout=10):
-                print(f'Transcribing {book_files[1]} on device {self.device_index}')
                 result = self.backend.transcribe(book_files[1])
-                print(f'Transcribed {book_files[1]} on device {self.device_index}')
                 self.transcribed.put_nowait({'text_book_filename': book_files[0], 
                                             'audio_file': book_files[1], 
                                             'transcription': result})

@@ -24,7 +24,7 @@ class FasterWhisperTranscriber():
 
     def transcribe(self, audio_file):
         filename_16, _ = convert_media(audio_file, format='wav', sr=16000)
-        result = self.model.transcribe_stable(filename_16, language='uk', regroup=True, verbose=False,
+        result = self.model.transcribe_stable(filename_16, language='uk', regroup=True, verbose=None,
                                                         prepend_punctuations= "\"'“¿([{-«",
                                                         append_punctuations = "\"'.。,，!！?？:：”)]}、»", suppress_tokens=self.number_tokens)
         os.remove(filename_16)

@@ -172,4 +172,4 @@ class Aligner():
             segmenter.run(str(audio_file), output_folder=audio_output)
         dfp.close()
         log_file.close()
-        return self.recognised_duration
+        return self.recognised_duration, pair.audio_book.duration, self.book.name
