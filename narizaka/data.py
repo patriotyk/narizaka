@@ -1,5 +1,6 @@
 import magic
 import sys
+from tqdm import tqdm
 from multiprocessing import Pool
 from narizaka.audiobook import AudioBook
 from narizaka.transcriber import Transcriber
@@ -37,25 +38,27 @@ class InputData():
                         break
         if found_book:
             self._make_and_add_book_pair(AudioBook(args.data), item)
-        
-        found_books = []
-        def find_one_book(book_dir):
-            for book_item in book_dir.iterdir():
-                    if not book_item.is_dir():
-                        mimetype = magic.from_file(filename=book_item, mime=True)
-                        if mimetype in self.supported_mimes:
-                            return book_item
-            return None
-        for speaker_id, book_or_group in enumerate(args.data.iterdir()):
+            return
+
+        items = list(args.data.iterdir())
+        for speaker_id, book_or_group in enumerate(tqdm(items, desc='Discovering data')):
             if book_or_group.is_dir():
-                if found_book:=find_one_book(book_or_group):
+                if found_book:=self._find_one_book(book_or_group):
                     self._make_and_add_book_pair(AudioBook(book_or_group,  speaker_id=speaker_id), found_book)
                 else:
                     for group_item in book_or_group.iterdir():
                         if group_item.is_dir():
-                            if found:=find_one_book(group_item):
+                            if found:=self._find_one_book(group_item):
                                 self._make_and_add_book_pair(AudioBook(group_item,  speaker_id=speaker_id), found)
 
+    def _find_one_book(self, book_dir):
+        for book_item in book_dir.iterdir():
+                if not book_item.is_dir():
+                    mimetype = magic.from_file(filename=book_item, mime=True)
+                    if mimetype in self.supported_mimes:
+                        return book_item
+        return None 
+    
     def get_all_pairs(self):
         return self.transcribed_books + self.needs_transcribe_books
 

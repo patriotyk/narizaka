@@ -13,5 +13,6 @@ torchaudio
 auditok
 stable-ts==2.17.3
 retry2
+tqdm
 num2words@git+https://github.com/patriotyk/num2words.git
 
