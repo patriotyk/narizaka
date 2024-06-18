@@ -2,8 +2,7 @@
 Tool to make high quality text to speech (tts) corpus from audio + text books.
 
 ## How it works
-First it splits audio files in to small segments 5-15 seconds, then it iterates over each segment
-and transcribes with whisper ASR and alligns this transcription with original text, if distance is very small we consider it as match and add it to the dataset.
+First it transcribes audio with whisper ASR, saving all word level timestamps, then it  alligns this transcription with original text, if distance is very small we consider it as match and add it to the dataset.
 
 
 ## Installation
@@ -22,13 +21,10 @@ brew install ffmpeg pandoc libmagic
 
 Then you can install `narizaka`:
 
-> **⚠ WARNING**
-> Because we have direct dependancies to github temporary we are not able to push `narizaka` to pypi. There is very old version.
-
 ```
 pip install narizaka
 ```
-or if you want last develop version:
+or if you want to use the latest development version:
 
 ```
 pip install git+https://github.com/patriotyk/narizaka.git
@@ -41,7 +37,7 @@ pip install -e narizaka/
 ```
 Flag `-e` means that you can edit source files in the directory where you have cloned this project and they will be reflected when you run command `narizaka`
 
-Every tagged commit on `main` brnach automatically pushes ro the docker hub. So you can also pull this images:
+Every tagged commit on the `main` branch, automatically generates and pushes image to the docker hub. So you can also pull this images:
 
 ```
 docker pull patriotyk/narizaka:latest
