@@ -26,7 +26,7 @@ dependencies = {file = ["requirements.txt"]}
 
 [tool.setuptools]
 include-package-data = false
-packages = ["narizaka", "narizaka.asr_backends", "narizaka.languages"]
+packages = ["narizaka", "narizaka.asr_backends", "narizaka.languages", "narizaka.languages.uk"]
 
 [project.scripts]
 narizaka = "narizaka.narizaka:run"
