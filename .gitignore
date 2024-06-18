@@ -1,5 +1,6 @@
 output/
 .venv/
+__pycache__/
 
 
 # Compiled Python bytecode

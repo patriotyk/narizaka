@@ -8,7 +8,7 @@ import json
 from narizaka.textbook import TextBook
 from narizaka.splitter import Splitter
 from narizaka import utils
-from narizaka.textnormalizer import norm
+from narizaka.languages.uk.textnormalizer import norm
 from fuzzysearch import find_near_matches
 from csv import DictWriter, QUOTE_MINIMAL
 from faster_whisper.utils import format_timestamp
