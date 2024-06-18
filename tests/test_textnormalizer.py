@@ -1,4 +1,4 @@
-from narizaka.textnormalizer import norm
+from narizaka.languages.uk.textnormalizer import norm
 
 def test_uah():
     assert norm('просто 1 грн.') == 'просто одна гривня.'
