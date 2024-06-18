@@ -1,5 +1,5 @@
 import regex
-from num2words import num2words
+from .num2words import num2words
 import unicodedata
 
 simple_replacements = {
