@@ -68,7 +68,7 @@ class AudioBook():
 
     def _is_media(self, filename: pathlib.Path)-> bool:
         m = magic.detect_from_filename(filename=filename)
-        return  True if m.mime_type.split('/')[0] == 'audio' else True if 'audio' in m.name.lower() else False
+        return  True if (m.mime_type.split('/')[0] == 'audio' or m.mime_type.split('/')[0] == 'video') else True if 'audio' in m.name.lower() else False
 
     def transcription(self):
         for hash, val in self.files.items():
