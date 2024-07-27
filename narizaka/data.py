@@ -91,8 +91,8 @@ class InputData():
                 transcriber = self._get_transcriber()
                 for pair in tqdm(transcriber.transcribe(), total=len(self.needs_transcribe_books), desc='Transcribing'):
                     if not self.args.c:
-                        futures = pool.submit(Aligner(self.args).run, pair)
-                        future.append(future)
+                        future = pool.submit(Aligner(self.args).run, pair)
+                        futures.append(future)
             if futures:
                 progress = tqdm(total=len(futures), desc='Aligning and cropping')
                 for future in as_completed(futures):
