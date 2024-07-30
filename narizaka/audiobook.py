@@ -15,6 +15,7 @@ class AudioBook():
         self.speaker_id = speaker_id
         self.files = OrderedDict()
         self.duration = 0.0
+        self.filename = filename
         if not filename.exists():
             raise Exception('Audio path doesn\'t exists')
 

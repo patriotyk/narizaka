@@ -9,7 +9,7 @@ from narizaka.utils import AudioTextPair
 
 
 class InputData():
-    supported_mimes =[
+    supported_text_mimes =[
             'application/epub+zip',
             'text/xml',
             'text/plain',
@@ -23,22 +23,31 @@ class InputData():
         self.transcriber = None
         found_book = None
         if args.t:
+            if args.ws:
+                print('Error: Option -t, can\'t be provided with -ws option.')
+                sys.exit(-1)
             mimetype = magic.from_file(filename=args.t, mime=True)
-            if mimetype in self.supported_mimes:
+            if mimetype in self.supported_text_mimes:
                 found_book = args.t
             else:
-                print('Text file is not suported.\n suported formats are:', self.supported_mimes)
+                print('Error: Text file is not suported.\n suported formats are:', self.supported_text_mimes)
                 sys.exit(-1)
         else:
-            for item in args.data.iterdir():
-                if not item.is_dir():
-                    mimetype = magic.from_file(filename=item, mime=True)
-                    if mimetype in self.supported_mimes:
-                        found_book = item
-                        break
-        if found_book:
-            self._make_and_add_book_pair(AudioBook(args.data), item)
-            return
+            if not args.ws:
+                for item in args.data.iterdir():
+                    if not item.is_dir():
+                        mimetype = magic.from_file(filename=item, mime=True)
+                        if mimetype in self.supported_text_mimes:
+                            found_book = item
+                            break
+        if found_book or args.ws:
+            abook = AudioBook(args.data)
+            if abook.files:
+                self._make_and_add_book_pair(abook, found_book)
+                return
+            else:
+                print(f'Error: Directory {args.data} doesn\'t contain audio files')
+                sys.exit(-1)
 
         items = list(args.data.iterdir())
         for speaker_id, book_or_group in enumerate(tqdm(items, desc='Discovering data')):
@@ -55,7 +64,7 @@ class InputData():
         for book_item in book_dir.iterdir():
                 if not book_item.is_dir():
                     mimetype = magic.from_file(filename=book_item, mime=True)
-                    if mimetype in self.supported_mimes:
+                    if mimetype in self.supported_text_mimes:
                         return book_item
         return None 
     

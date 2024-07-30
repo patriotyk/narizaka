@@ -23,6 +23,7 @@ bad_text = regex.compile('[0-9\p{L}--[а-яіїєґ]]', regex.VERSION1|regex.IGN
 class Aligner():
     def __init__(self, args) -> None:
         self.output = args.o
+        self.data_path = args.data
         self.sr = args.sr
         self.splitter = Splitter()
         self.columns = args.columns.split(',')
@@ -117,18 +118,21 @@ class Aligner():
         self.denorm = []
         self.norm_text = ''
         self.current_pos = 0
-        self.book = TextBook(pair.text_book_path)
+        self.book = TextBook(pair.text_book_path) if pair.text_book_path else None
 
         self.recognised_duration = 0.0
 
-        audio_output = self.output / self.book.name
+        if self.data_path == pair.audio_book.filename:
+            audio_output = self.output / self.data_path.name
+        else:
+            audio_output = self.output / pair.audio_book.filename.relative_to(self.data_path)
         if not audio_output.exists():
             os.makedirs(audio_output, exist_ok=True)
     
             
-        dataset_file = self.output.joinpath(self.book.name+'.txt')
-        log_file = open(self.output.joinpath(self.book.name+'.log'), 'w')
-        log_file.write(f'\nStarting book {self.book.name}\n')
+        dataset_file = audio_output.parent/(audio_output.name+'.txt')
+        log_file = open(audio_output.parent/(audio_output.name+'.log'), 'w')
+        log_file.write(f'\nStarting book {audio_output.name}\n')
         dfp = dataset_file.open("w")
         ds = DictWriter(
             dfp,
@@ -148,28 +152,34 @@ class Aligner():
                     continue
                 log_file.write(f'\n{format_timestamp(segment["start"])} -> {format_timestamp(segment["end"])}: {segment["text"]}\n')
 
-                match = self.find_match(segment["text"])
-                if match.get('matched'):
-                    segment['sentence'] = match["sentence"]
-                    log_file.write(f'MATCHED: {match["sentence"]}\n')
-                    if not self.pases_filter(segment):
+                if self.book:
+                    match = self.find_match(segment["text"])
+                    if match.get('matched'):
+                        segment['sentence'] = match["sentence"]
+                        log_file.write(f'MATCHED: {match["sentence"]}\n')
+                    else:
+                        log_file.write(f'NOT MATCHED: {match["book_text"]}\n')
                         continue
-
-                    start = float(segment['start'])
-                    end = float(segment['end'])
-                    filename = segmenter.save(start_time=start, end_time=end)
-                    
-                    segment['duration'] = segment['end'] - segment['start']
-                    segment['audio'] = os.path.join(self.book.name, filename)
-                    segment['speaker_id'] = pair.audio_book.speaker_id or '0'
-
-                    ds.writerow(segment)
-                    self.recognised_duration += segment['duration']
-
                 else:
-                    log_file.write(f'NOT MATCHED: {match["book_text"]}\n')
+                    segment['sentence'] = segment["text"]
+                if not self.pases_filter(segment):
+                    continue
+
+                start = float(segment['start'])
+                end = float(segment['end'])
+                filename = segmenter.save(start_time=start, end_time=end)
+                
+                segment['duration'] = segment['end'] - segment['start']
+                segment['audio'] = audio_output.relative_to(self.output)/filename
+                segment['speaker_id'] = pair.audio_book.speaker_id or '0'
+
+                ds.writerow(segment)
+                self.recognised_duration += segment['duration']
+
+                
+                    
             os.remove(file_16)
             segmenter.run(str(audio_file), output_folder=audio_output)
         dfp.close()
         log_file.close()
-        return self.recognised_duration, pair.audio_book.duration, self.book.name
+        return self.recognised_duration, pair.audio_book.duration, audio_output.name
