@@ -11,7 +11,7 @@ pandas
 torch
 torchaudio
 auditok
-stable-ts@git+https://github.com/jianfch/stable-ts.git@e6c44f97d0d56015e1a63134b61bed768153696e
+stable-ts==2.18.0
 retry2
 tqdm
 

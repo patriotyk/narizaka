@@ -89,7 +89,7 @@ class InputData():
                     futures.append(future)
             if self.needs_transcribe_books:
                 transcriber = self._get_transcriber()
-                for pair in tqdm(transcriber.transcribe(), total=len(self.needs_transcribe_books), desc='Transcribing'):
+                for pair in transcriber.transcribe():
                     if not self.args.c:
                         future = pool.submit(Aligner(self.args).run, pair)
                         futures.append(future)
