@@ -73,7 +73,7 @@ class Transcriber():
         progress_q = Queue()        
         
         for index in range(self.devices):
-            worker = BackendWorker(self.device, 0 if self.device == 'cuda' else 0, self.audio_files_q, self.transcribed, progress_q)
+            worker = BackendWorker(self.device, index if self.device == 'cuda' else 0, self.audio_files_q, self.transcribed, progress_q)
             worker.start()
             self.workers.append(worker)
 
