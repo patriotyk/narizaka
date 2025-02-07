@@ -2,12 +2,12 @@ import auditok
 
 class Splitter():
     def split_to_segments(self, audio_file, all_words):
-        def _split(region, threshold=46, deep=4):
+        def _split(region, threshold=42, deep=4):
             if not region.meta:
                 region.meta = {'start': 0}
             audio_regions = []
             for r in region.split(
-                min_dur=0.2,     # minimum duration of a valid audio event in seconds
+                min_dur=0.4,     # minimum duration of a valid audio event in seconds
                 max_dur=80,       # maximum duration of an event
                 max_silence=0.11, # maximum duration of tolerated continuous silence within an event
                 energy_threshold=threshold # threshold of detection

@@ -11,7 +11,7 @@ pandas
 torch
 torchaudio
 auditok
-stable-ts==2.17.3
+stable-ts==2.18.0
 retry2
 tqdm
 
