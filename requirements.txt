@@ -10,7 +10,7 @@ python-magic
 pandas
 torch
 torchaudio
-auditok
+auditok@git+https://github.com/amsehili/auditok.git@54cf24bf7d4f32aaa54495bface4d5961da02bc6
 stable-ts==2.18.0
 retry2
 tqdm
