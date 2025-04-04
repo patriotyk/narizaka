@@ -83,7 +83,7 @@ class Transcriber():
                 progress = progress_q.get(timeout=10)
                 pbar.update(round(progress))
                 if not self.transcribed.empty():
-                    transcribed = self.transcribed.get(timeout=40)
+                    transcribed = self.transcribed.get(timeout=140)
                     pair = self.books[transcribed['text_book_filename']]
                     pair.audio_book.save_transcription(transcribed['audio_file'], transcribed['transcription'] )
                     if pair.audio_book.is_transcribed():
