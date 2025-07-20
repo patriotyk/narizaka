@@ -8,7 +8,7 @@ class FasterWhisperTranscriber():
     def __init__(self, device, device_index, progress) -> None:
 
         self.model = stable_whisper.load_faster_whisper(
-            'large-v2', device=device, device_index=device_index, cpu_threads=2)
+            'turbo', device=device, device_index=device_index, cpu_threads=2)
         tokenizer = Tokenizer(
                     self.model.hf_tokenizer,
                     True,

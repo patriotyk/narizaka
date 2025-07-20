@@ -1,13 +1,21 @@
-
+import atexit
 import argparse
+import subprocess
 import sys
 import os
+import termios
 import zipfile
 from pathlib import Path
 from narizaka.data import InputData
 
 
-columns = 'audio,speaker_id,sentence,duration'
+def reset_terminal():
+    subprocess.run(['stty', 'sane'])
+
+atexit.register(reset_terminal)
+
+
+columns = 'audio,speaker_id,sentence,duration,distance'
 def run():
     parser = argparse.ArgumentParser(description = 'Utility to make audio dataset from  audio and text book')
 

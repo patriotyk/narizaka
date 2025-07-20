@@ -80,3 +80,4 @@ class AudioBook():
     def get_cache_files(self):
         for hash in self.files.keys():
             yield self.cache_path / pathlib.Path(hash+'.json')
+

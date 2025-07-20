@@ -38,7 +38,7 @@ class BackendWorker(Process):
                 self.transcribed.put_nowait({'text_book_filename': book_files[0], 
                                             'audio_file': book_files[1], 
                                             'transcription': result})
-                self.progress_q.put(0)
+                self.progress_q.put(-1)
         except Empty:
             pass
             #print('Done worker thread')
@@ -82,7 +82,7 @@ class Transcriber():
             try:
                 progress = progress_q.get(timeout=10)
                 pbar.update(round(progress))
-                if not self.transcribed.empty():
+                if progress == -1:
                     transcribed = self.transcribed.get(timeout=140)
                     pair = self.books[transcribed['text_book_filename']]
                     pair.audio_book.save_transcription(transcribed['audio_file'], transcribed['transcription'] )

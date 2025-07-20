@@ -35,12 +35,10 @@ class Splitter():
                 pugaps.append([word['end'], all_words[i+1]['start'], i])
                 text = ''
         
-        
         temp_reg = None
         start_word = 0
         regions_by_punct = []
         for i, r in enumerate(audio_regions[:-1]):
-
             if not temp_reg:
                 temp_reg = r
             else:
@@ -48,10 +46,9 @@ class Splitter():
                 temp_reg += r
                 temp_reg.meta = {'end': r.meta.end, 'start': start}
 
-            gap_dur = audio_regions[i+1].meta.start - r.meta.end
-            gap_point = r.meta.end + (gap_dur/2)
+            gap_point = r.meta.end + 0.1
             found = next((item for item in pugaps if (item[0]-0.1) <= gap_point <= item[1]+0.1), None)
-            
+             
             if found:
                 if start_word != found[2]+1:
                     text = ''.join([word['word'] for word in all_words[start_word:found[2]+1]])
@@ -61,7 +58,6 @@ class Splitter():
                                                 'text': text})
                         temp_reg = None
                         start_word = found[2]+1
-                
 
         ready_segment = {}
         for segment in regions_by_punct:

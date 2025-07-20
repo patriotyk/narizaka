@@ -94,7 +94,7 @@ class Aligner():
         if not norm_text:
             match['book_text'] = self.current_norm_text()[:20 ] + "..."
             return match
-        matches = find_near_matches(norm_text, self.current_norm_text(), max_l_dist=int(num_words*0.2))
+        matches = find_near_matches(norm_text, self.current_norm_text(), max_l_dist=int(num_words*0.6))
         if matches and matches[0].matched:
             matched = min(matches, key=lambda m: m.start)
             
@@ -162,7 +162,7 @@ class Aligner():
                     segment['duration'] = segment['end'] - segment['start']
                     segment['audio'] = os.path.join(self.book.name, filename)
                     segment['speaker_id'] = pair.audio_book.speaker_id or '0'
-
+                    segment['distance'] = match['distance']
                     ds.writerow(segment)
                     self.recognised_duration += segment['duration']
 
