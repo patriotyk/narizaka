@@ -40,6 +40,9 @@ class Splitter():
         regions_by_punct = []
         for i, r in enumerate(audio_regions[:-1]):
             if not temp_reg:
+                found_start = next((item for item in all_words[start_word:] if (item['start']-0.2) <= r.meta.start <= item['start']+0.3), None)
+                if not found_start:
+                    continue
                 temp_reg = r
             else:
                 start = temp_reg.meta.start
